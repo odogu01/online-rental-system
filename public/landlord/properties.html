@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Properties - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html" class="active"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">My Properties</h2><p class="text-sm text-gray-500">Manage your rental properties</p></div>
+      <a href="/landlord/property-add.html" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i>Add Property</a>
+    </header>
+    <div class="content-area">
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="flex flex-wrap gap-3 items-center">
+          <select id="statusFilter" class="input" onchange="loadPropertiesList()"><option value="">All Status</option><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select>
+          <input type="number" id="minRent" placeholder="Min Rent" class="input w-28" onchange="loadPropertiesList()">
+          <input type="number" id="maxRent" placeholder="Max Rent" class="input w-28" onchange="loadPropertiesList()">
+          <input type="number" id="bedrooms" placeholder="Bedrooms" class="input w-24" onchange="loadPropertiesList()">
+          <input type="text" id="location" placeholder="Location" class="input w-40" onchange="loadPropertiesList()">
+          <button onclick="loadPropertiesList()" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i>Search</button>
+        </div>
+      </div>
+      <!-- Table -->
+      <div id="propertiesContainer" class="bg-white rounded-xl shadow-sm"><p class="text-gray-400 text-sm p-6">Loading...</p></div>
+    </div>
+  </div>
+
+  <!-- Delete Modal -->
+  <div id="deleteModal" class="modal"><div class="modal-content p-6" style="max-width:420px">
+    <h3 class="text-lg font-semibold mb-2">Delete Property</h3><p class="text-gray-600 text-sm mb-4">Are you sure? This cannot be undone. Properties with active leases cannot be deleted.</p>
+    <div class="flex justify-end gap-3"><button onclick="closeModal('deleteModal')" class="btn btn-secondary btn-sm">Cancel</button><button id="confirmDeleteBtn" onclick="confirmDelete()" class="btn btn-danger btn-sm">Delete</button></div>
+  </div></div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/property.js"></script>
+  <script>
+    let deletePropertyId = null;
+    document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadPropertiesList(); });
+
+    async function loadPropertiesList() {
+      try {
+        const filters = {};
+        const s = document.getElementById('statusFilter').value; if(s) filters.status = s;
+        const min = document.getElementById('minRent').value; if(min) filters.minRent = min;
+        const max = document.getElementById('maxRent').value; if(max) filters.maxRent = max;
+        const bed = document.getElementById('bedrooms').value; if(bed) filters.bedrooms = bed;
+        const loc = document.getElementById('location').value; if(loc) filters.location = loc;
+        await loadPropertiesTable('propertiesContainer', filters);
+      } catch(e) { document.getElementById('propertiesContainer').innerHTML = '<p class="text-red-500 p-6">Failed to load properties</p>'; }
+    }
+
+    window.deleteProperty = function(id) { deletePropertyId = id; openModal('deleteModal'); };
+    async function confirmDelete() {
+      if (!deletePropertyId) return;
+      document.getElementById('confirmDeleteBtn').disabled = true;
+      try { await deleteProperty(deletePropertyId); closeModal('deleteModal'); loadPropertiesList(); }
+      catch(e) { alert(e.message || 'Failed to delete'); }
+      finally { document.getElementById('confirmDeleteBtn').disabled = false; deletePropertyId = null; }
+    }
+  </script>
+</body>
+</html>
+

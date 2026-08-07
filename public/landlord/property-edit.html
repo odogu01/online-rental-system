@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Property - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html" class="active"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Edit Property</h2><p class="text-sm text-gray-500">Update property details</p></div>
+    </header>
+    <div class="content-area">
+      <div class="bg-white rounded-xl shadow-sm p-6 max-w-3xl">
+        <div id="loadingData" class="text-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i><p class="text-gray-400 mt-2">Loading property...</p></div>
+        <form id="propertyForm" class="hidden" onsubmit="return handleSubmit(event)">
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div class="md:col-span-2"><label class="label">Property Title</label><input type="text" id="title" class="input" required></div>
+            <div><label class="label">Location / Address</label><input type="text" id="location" class="input" required></div>
+            <div><label class="label">Rent Amount (NGN)</label><input type="number" id="rentAmount" class="input" min="0" required></div>
+            <div><label class="label">Bedrooms</label><input type="number" id="bedrooms" class="input" min="0" required></div>
+            <div><label class="label">Bathrooms</label><input type="number" id="bathrooms" class="input" min="0" required></div>
+            <div><label class="label">Status</label><select id="status" class="input"><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select></div>
+          </div>
+          <div class="mb-4"><label class="label">Amenities</label><textarea id="amenities" class="input" rows="2"></textarea></div>
+          <div class="mb-4"><label class="label">Description</label><textarea id="description" class="input" rows="3" required></textarea></div>
+          <div id="formMessage" class="hidden mb-4"></div>
+          <div class="flex gap-3"><button type="submit" id="submitBtn" class="btn btn-primary">Update Property</button><a href="/landlord/properties.html" class="btn btn-secondary">Cancel</a></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/validation.js"></script><script src="/js/dashboard.js"></script><script src="/js/property.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const propertyId = urlParams.get('id');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      protectPage('landlord');
+      if (!propertyId) { showToast('No property ID specified', 'error'); return; }
+      try {
+        const result = await apiGet(`/properties/${propertyId}`);
+        const p = result.data;
+        if (!p) throw new Error('Property not found');
+        document.getElementById('title').value = p.title || '';
+        document.getElementById('location').value = p.location || '';
+        document.getElementById('rentAmount').value = p.rentAmount || '';
+        document.getElementById('bedrooms').value = p.bedrooms || '';
+        document.getElementById('bathrooms').value = p.bathrooms || '';
+        document.getElementById('status').value = p.status || 'vacant';
+        document.getElementById('amenities').value = p.amenities || '';
+        document.getElementById('description').value = p.description || '';
+        document.getElementById('loadingData').classList.add('hidden');
+        document.getElementById('propertyForm').classList.remove('hidden');
+      } catch(e) { document.getElementById('loadingData').innerHTML = '<p class="text-red-500">Failed to load property</p>'; }
+    });
+
+    async function handleSubmit(e) {
+      e.preventDefault(); const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Updating...';
+      try {
+        const data = { title: document.getElementById('title').value, location: document.getElementById('location').value, rentAmount: Number(document.getElementById('rentAmount').value), bedrooms: Number(document.getElementById('bedrooms').value), bathrooms: Number(document.getElementById('bathrooms').value), amenities: document.getElementById('amenities').value, description: document.getElementById('description').value, status: document.getElementById('status').value };
+        await submitPropertyForm(`/properties/${propertyId}`, data);
+        showToast('Property updated!', 'success');
+        setTimeout(() => window.location.href = '/landlord/properties.html', 1500);
+      } catch(e) { showFormError('formMessage', e); btn.disabled = false; btn.innerHTML = 'Update Property'; }
+    }
+  </script>
+</body>
+</html>
+

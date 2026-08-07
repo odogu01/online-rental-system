@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landlord Dashboard - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo flex items-center gap-3">
+      <i class="fas fa-building text-2xl"></i>
+      <div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div>
+      <a href="/landlord/dashboard.html" class="active"><i class="fas fa-chart-pie"></i>Dashboard</a>
+      <a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a>
+      <a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a>
+      <a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div>
+      <a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a>
+      <a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div>
+      <a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div>
+      <a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a>
+      <a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Dashboard</h2><p class="text-sm text-gray-500">Welcome back, <span class="user-name font-medium">User</span></p></div>
+      <div class="flex items-center gap-3">
+        <span class="role-badge">Landlord</span>
+        <div class="w-9 h-9 bg-blue-900 rounded-full flex items-center justify-center text-white text-sm font-bold user-avatar">DK</div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Stat Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card">
+          <div class="flex justify-between items-start">
+            <div><p class="text-sm text-gray-500">Total Properties</p><p class="text-3xl font-bold text-gray-900 mt-1"><span id="totalProperties" class="skeleton">0</span></p></div>
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-building text-blue-600"></i></div>
+          </div>
+          <div class="mt-3 text-xs text-gray-400">Vacant: <span id="vacantCount">0</span> | Occupied: <span id="occupiedCount">0</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="flex justify-between items-start">
+            <div><p class="text-sm text-gray-500">Active Leases</p><p class="text-3xl font-bold text-gray-900 mt-1"><span id="activeLeases" class="skeleton">0</span></p></div>
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-file-signature text-green-600"></i></div>
+          </div>
+          <div class="mt-3 text-xs text-gray-400">Expiring soon: <span id="expiringLeases">0</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="flex justify-between items-start">
+            <div><p class="text-sm text-gray-500">Payments Collected</p><p class="text-3xl font-bold text-gray-900 mt-1">NGN <span id="totalCollected" class="skeleton">0</span></p></div>
+            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center"><i class="fas fa-credit-card text-yellow-600"></i></div>
+          </div>
+          <div class="mt-3 text-xs text-gray-400">Overdue: NGN <span id="overdueAmount">0</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="flex justify-between items-start">
+            <div><p class="text-sm text-gray-500">Maintenance</p><p class="text-3xl font-bold text-gray-900 mt-1"><span id="maintenanceCount" class="skeleton">0</span></p></div>
+            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-tools text-red-600"></i></div>
+          </div>
+          <div class="mt-3 text-xs text-gray-400">Pending: <span id="pendingMaintenance">0</span></div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <h3 class="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div class="flex flex-wrap gap-3">
+          <a href="/landlord/property-add.html" class="btn btn-primary btn-sm"><i class="fas fa-plus mr-1"></i>Add Property</a>
+          <a href="/landlord/lease-create.html" class="btn btn-success btn-sm"><i class="fas fa-file-signature mr-1"></i>Create Lease</a>
+          <a href="/landlord/payment-record.html" class="btn btn-warning btn-sm"><i class="fas fa-credit-card mr-1"></i>Record Payment</a>
+          <a href="/landlord/reports.html" class="btn btn-secondary btn-sm"><i class="fas fa-chart-bar mr-1"></i>View Reports</a>
+        </div>
+      </div>
+
+      <!-- Two Column: Recent Activities + Upcoming -->
+      <div class="grid lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">Recent Payments</h3>
+          <div id="recentPayments"><p class="text-gray-400 text-sm">Loading...</p></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">Upcoming Expiries</h3>
+          <div id="upcomingExpiries"><p class="text-gray-400 text-sm">Loading...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      protectPage('landlord');
+      loadDashboardData();
+      loadRecentPayments();
+      loadExpiries();
+    });
+
+    async function loadDashboardData() {
+      try {
+        // Load properties summary
+        const propResult = await apiGet('/properties');
+        const props = propResult.data?.properties || [];
+        document.getElementById('totalProperties').textContent = props.length;
+        document.getElementById('vacantCount').textContent = props.filter(p => p.status === 'vacant').length;
+        document.getElementById('occupiedCount').textContent = props.filter(p => p.status === 'occupied').length;
+      } catch(e) {}
+
+      try {
+        // Load payments
+        const payResult = await apiGet('/payments');
+        const summary = payResult.data?.summary || {};
+        document.getElementById('totalCollected').textContent = (summary.paid || 0).toLocaleString();
+        document.getElementById('overdueAmount').textContent = (summary.overdue || 0).toLocaleString();
+      } catch(e) {}
+
+      try {
+        // Load maintenance stats
+        await loadMaintenanceStats('maintenanceStats');
+        const maintResult = await apiGet('/maintenance/statistics');
+        const stats = maintResult.data?.summary;
+        if (stats) {
+          document.getElementById('maintenanceCount').textContent = stats.total || 0;
+          document.getElementById('pendingMaintenance').textContent = stats.pending || 0;
+        }
+      } catch(e) {}
+
+      try {
+        // Load active leases
+        const leaseResult = await apiGet('/leases/active');
+        const leases = leaseResult.data?.leases || [];
+        document.getElementById('activeLeases').textContent = leases.length;
+        document.getElementById('expiringLeases').textContent = leaseResult.data?.expiringSoonCount || 0;
+      } catch(e) {}
+    }
+
+    async function loadRecentPayments() {
+      try {
+        const result = await apiGet('/payments', { limit: 5 });
+        const payments = result.data?.payments || [];
+        const container = document.getElementById('recentPayments');
+        if (payments.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm">No payments recorded yet</p>'; return; }
+        container.innerHTML = payments.slice(0, 5).map(p => `
+          <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+            <div><p class="text-sm font-medium">${truncate(p.leaseId?.propertyId?.title, 20)}</p><p class="text-xs text-gray-400">${formatDate(p.paymentDate)}</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">NGN ${(p.amount || 0).toLocaleString()}</p>${getStatusBadge(p.status)}</div>
+          </div>
+        `).join('');
+      } catch(e) { document.getElementById('recentPayments').innerHTML = '<p class="text-gray-400 text-sm">Failed to load</p>'; }
+    }
+
+    async function loadExpiries() {
+      try {
+        const result = await apiGet('/leases/active');
+        const expiring = result.data?.expiringSoon || [];
+        const container = document.getElementById('upcomingExpiries');
+        if (expiring.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm">No leases expiring soon</p>'; return; }
+        container.innerHTML = expiring.map(l => `
+          <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+            <div><p class="text-sm font-medium">${truncate(l.propertyId?.title, 20)}</p><p class="text-xs text-gray-400">${l.tenantId?.fullName || 'N/A'}</p></div>
+            <div class="text-right text-sm ${new Date(l.endDate) < new Date(Date.now() + 7*24*60*60*1000) ? 'text-red-600 font-semibold' : 'text-yellow-600'}">${formatDate(l.endDate)}</div>
+          </div>
+        `).join('');
+      } catch(e) { document.getElementById('upcomingExpiries').innerHTML = '<p class="text-gray-400 text-sm">Failed to load</p>'; }
+    }
+  </script>
+  <div id="maintenanceStats" class="hidden"></div>
+</body>
+</html>
+

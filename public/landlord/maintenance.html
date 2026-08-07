@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html" class="active"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Maintenance Requests</h2><p class="text-sm text-gray-500">Manage repair and maintenance requests</p></div>
+    </header>
+    <div class="content-area">
+      <!-- Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card"><p class="text-sm text-gray-500">Total</p><p class="text-2xl font-bold" id="statsTotal">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Pending</p><p class="text-2xl font-bold text-yellow-600" id="statsPending">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">In Progress</p><p class="text-2xl font-bold text-blue-600" id="statsInProgress">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Completed</p><p class="text-2xl font-bold text-green-600" id="statsCompleted">0</p></div>
+      </div>
+      <!-- Filter -->
+      <div class="filter-bar">
+        <select id="statusFilter" class="input" onchange="loadRequests()"><option value="">All Status</option><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select>
+        <select id="urgencyFilter" class="input" onchange="loadRequests()"><option value="">All Urgency</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
+      </div>
+      <!-- Table -->
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <div id="requestsContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div id="statusModal" class="modal"><div class="modal-content p-6" style="max-width:450px">
+    <h3 class="text-lg font-semibold mb-2">Update Status</h3>
+    <div class="mb-4"><label class="label">New Status</label><select id="newStatus" class="input"><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select></div>
+    <div class="mb-4"><label class="label">Resolution Notes</label><textarea id="resolutionNotes" class="input" rows="3"></textarea></div>
+    <div id="statusFormMessage" class="hidden mb-2"></div>
+    <div class="flex justify-end gap-3"><button onclick="closeModal('statusModal')" class="btn btn-secondary btn-sm">Cancel</button><button id="updateStatusBtn" onclick="updateStatus()" class="btn btn-primary btn-sm">Update</button></div>
+  </div></div>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="modal"><div class="modal-content p-6" style="max-width:550px">
+    <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Request Details</h3><button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-gray-700">&times;</button></div>
+    <div id="detailContent"><p class="text-gray-400">Loading...</p></div>
+  </div></div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/maintenance.js"></script>
+  <script>
+    let currentRequestId = null;
+    document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadRequests(); });
+
+    async function loadRequests() {
+      const params = {};
+      const s = document.getElementById('statusFilter').value; if(s) params.status = s;
+      const u = document.getElementById('urgencyFilter').value; if(u) params.urgency = u;
+      try {
+        await loadMaintenanceRequests('requestsContainer', params);
+        const statsResult = await apiGet('/maintenance/statistics');
+        const summary = statsResult.data?.summary;
+        if (summary) {
+          document.getElementById('statsTotal').textContent = summary.total || 0;
+          document.getElementById('statsPending').textContent = summary.pending || 0;
+          document.getElementById('statsInProgress').textContent = summary.inProgress || 0;
+          document.getElementById('statsCompleted').textContent = summary.completed || 0;
+        }
+      } catch(e) { document.getElementById('requestsContainer').innerHTML = '<p class="text-red-500 p-4">Failed to load</p>'; }
+    }
+
+    window.openStatusModal = function(id) { currentRequestId = id; openModal('statusModal'); };
+    window.viewDetails = async function(id) {
+      openModal('detailModal');
+      document.getElementById('detailContent').innerHTML = '<p class="text-gray-400">Loading...</p>';
+      try { await viewRequestDetails(id, 'detailContent'); } catch(e) { document.getElementById('detailContent').innerHTML = '<p class="text-red-500">Failed to load</p>'; }
+    };
+
+    async function updateStatus() {
+      const status = document.getElementById('newStatus').value;
+      const notes = document.getElementById('resolutionNotes').value;
+      const btn = document.getElementById('updateStatusBtn'); btn.disabled = true;
+      try {
+        if (status === 'completed' || status === 'rejected') {
+          await updateRequestStatus(currentRequestId, status, 'detailContent');
+        }
+        await submitStatusUpdate(currentRequestId, status, notes);
+        closeModal('statusModal');
+        loadRequests();
+      } catch(e) { showFormError('statusFormMessage', e); }
+      finally { btn.disabled = false; }
+    }
+  </script>
+</body>
+</html>
+

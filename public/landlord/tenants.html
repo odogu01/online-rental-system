@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenants - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html" class="active"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Tenants</h2><p class="text-sm text-gray-500">View your tenants and their lease info</p></div>
+    </header>
+    <div class="content-area">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card"><p class="text-sm text-gray-500">Total Tenants</p><p class="text-2xl font-bold" id="totalTenants">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Active Leases</p><p class="text-2xl font-bold" id="activeTenantCount">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Overdue Payments</p><p class="text-2xl font-bold" id="overdueTenantCount">0</p></div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div id="tenantsContainer"><p class="text-gray-400">Loading tenants...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadTenants(); });
+
+    async function loadTenants() {
+      try {
+        const result = await apiGet('/leases/tenants');
+        const tenants = result.data?.tenants || [];
+        document.getElementById('totalTenants').textContent = tenants.length;
+
+        // Also load active leases to get counts
+        const leaseResult = await apiGet('/leases/active');
+        const activeLeases = leaseResult.data?.leases || [];
+        document.getElementById('activeTenantCount').textContent = new Set(activeLeases.map(l => l.tenantId?._id).filter(Boolean)).size;
+
+        const container = document.getElementById('tenantsContainer');
+        if (tenants.length === 0) { container.innerHTML = emptyState('No tenants yet. Create a lease to add tenants.'); return; }
+
+        // Get overdue payment info
+        let overdueMap = {};
+        try { const overResult = await apiGet('/payments/overdue'); const overdue = overResult.data?.payments || []; overdue.forEach(p => { if (p.leaseId?.tenantId?._id) overdueMap[p.leaseId.tenantId._id] = (overdueMap[p.leaseId.tenantId._id] || 0) + 1; }); } catch(e) {}
+        document.getElementById('overdueTenantCount').textContent = Object.keys(overdueMap).length;
+
+        container.innerHTML = `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">${tenants.map(t => {
+          const isOverdue = overdueMap[t._id] > 0;
+          return `<div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${getInitials(t.fullName)}</div>
+            <div><p class="font-semibold text-sm">${t.fullName}</p><p class="text-xs text-gray-400">${t.email}</p></div></div>
+            <div class="text-xs space-y-1"><p><i class="fas fa-phone mr-1 w-4 text-gray-400"></i>${t.phoneNumber || 'N/A'}</p>
+            ${isOverdue ? '<p class="text-red-600 font-medium"><i class="fas fa-exclamation-circle mr-1"></i>Has overdue payments</p>' : ''}</div>
+          </div>`;
+        }).join('')}</div>`;
+      } catch(e) { document.getElementById('tenantsContainer').innerHTML = '<p class="text-red-500">Failed to load tenants</p>'; }
+    }
+
+    function getInitials(name) { return (name || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2); }
+  </script>
+</body>
+</html>
+

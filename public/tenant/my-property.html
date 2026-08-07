@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Property - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Tenant Portal</div></div></div>
+    <nav class="sidebar-nav"><div class="sidebar-section">Main</div><a href="/tenant/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/tenant/properties.html"><i class="fas fa-building"></i>Browse Properties</a><a href="/tenant/my-property.html" class="active"><i class="fas fa-home"></i>My Property</a><div class="sidebar-section">Financial</div><a href="/tenant/payments.html"><i class="fas fa-credit-card"></i>Payments</a><div class="sidebar-section">Services</div><a href="/tenant/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a><div class="sidebar-section">Account</div><a href="/tenant/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">My Property</h2><p class="text-sm text-gray-500">View your rented property details</p></div>
+    </header>
+    <div class="content-area">
+      <div id="propertyContent"><p class="text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadMyProperty(); });
+
+    async function loadMyProperty() {
+      try {
+        const result = await apiGet('/leases/active');
+        const leases = result.data?.leases || [];
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const myLease = leases.find(l => l.tenantId?._id === user.id);
+        if (!myLease) {
+          document.getElementById('propertyContent').innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+              <i class="fas fa-home text-5xl text-gray-300 mb-4"></i>
+              <h3 class="text-xl font-semibold text-gray-700 mb-2">No Property Yet</h3>
+              <p class="text-gray-400 mb-4">You don't have an active lease. Browse available properties to get started.</p>
+              <a href="/tenant/properties.html" class="btn btn-primary">Browse Properties</a>
+            </div>`;
+          return;
+        }
+        document.getElementById('propertyContent').innerHTML = `
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="h-40 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center"><i class="fas fa-building text-6xl text-white opacity-30"></i></div>
+            <div class="p-6">
+              <div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold">${myLease.propertyId?.title || 'N/A'}</h2><p class="text-gray-500 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${myLease.propertyId?.location || 'N/A'}</p></div>
+              ${getStatusBadge(myLease.status)}</div>
+              <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Bedrooms</p><p class="text-lg font-semibold">${myLease.propertyId?.bedrooms || 'N/A'}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Bathrooms</p><p class="text-lg font-semibold">${myLease.propertyId?.bathrooms || 'N/A'}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Monthly Rent</p><p class="text-lg font-semibold text-blue-600">NGN ${(myLease.monthlyRent || 0).toLocaleString()}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Security Deposit</p><p class="text-lg font-semibold">NGN ${(myLease.securityDeposit || 0).toLocaleString()}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease Start</p><p class="text-lg font-semibold">${formatDate(myLease.startDate)}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease End</p><p class="text-lg font-semibold ${new Date(myLease.endDate) < new Date() ? 'text-red-600' : ''}">${formatDate(myLease.endDate)}</p></div>
+              </div>
+              ${myLease.propertyId?.amenities ? `<div class="mt-4"><h4 class="font-semibold mb-2">Amenities</h4><p class="text-gray-600">${myLease.propertyId.amenities}</p></div>` : ''}
+              ${myLease.propertyId?.description ? `<div class="mt-4"><h4 class="font-semibold mb-2">Description</h4><p class="text-gray-600">${myLease.propertyId.description}</p></div>` : ''}
+              <div class="flex gap-3 mt-6">
+                <a href="/tenant/payments.html" class="btn btn-primary btn-sm"><i class="fas fa-credit-card mr-1"></i>Make Payment</a>
+                <a href="/tenant/maintenance.html" class="btn btn-warning btn-sm"><i class="fas fa-tools mr-1"></i>Report Issue</a>
+              </div>
+            </div>
+          </div>`;
+      } catch(e) { document.getElementById('propertyContent').innerHTML = '<p class="text-red-500">Failed to load property</p>'; }
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Rental Property Management System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm border-b border-gray-200 fixed w-full z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-900 rounded-lg flex items-center justify-center">
+            <i class="fas fa-building text-white text-lg"></i>
+          </div>
+          <span class="font-bold text-xl text-blue-900">RentalSystem</span>
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+          <a href="/index.html" class="text-blue-900 font-medium">Home</a>
+          <a href="/properties.html" class="text-gray-600 hover:text-blue-900">Properties</a>
+          <a href="#features" class="text-gray-600 hover:text-blue-900">Features</a>
+          <a href="#about" class="text-gray-600 hover:text-blue-900">About</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="/login.html" class="btn btn-secondary btn-sm">Login</a>
+          <a href="/register.html" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-gradient pt-24 pb-16 md:pt-32 md:pb-24">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight">
+            Simplify Property<br>Management with<br><span class="text-yellow-400">One Platform</span>
+          </h1>
+          <p class="text-blue-200 text-lg mt-6 leading-relaxed">
+            A comprehensive solution for landlords and tenants to manage properties, 
+            track payments, handle maintenance requests, and generate reports — all in one place.
+          </p>
+          <div class="flex gap-4 mt-8">
+            <a href="/register.html" class="btn bg-white text-blue-900 hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg">
+              <i class="fas fa-user-plus mr-2"></i>Get Started
+            </a>
+            <a href="/properties.html" class="btn border-2 border-white text-white hover:bg-white hover:text-blue-900 font-semibold px-8 py-3 rounded-lg">
+              <i class="fas fa-building mr-2"></i>Browse Properties
+            </a>
+          </div>
+        </div>
+        <div class="hidden md:block">
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <i class="fas fa-home text-3xl text-yellow-400 mb-2"></i>
+                <p class="text-white text-2xl font-bold">50+</p>
+                <p class="text-blue-200 text-sm">Properties</p>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <i class="fas fa-users text-3xl text-yellow-400 mb-2"></i>
+                <p class="text-white text-2xl font-bold">200+</p>
+                <p class="text-blue-200 text-sm">Tenants</p>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <i class="fas fa-credit-card text-3xl text-yellow-400 mb-2"></i>
+                <p class="text-white text-2xl font-bold">500+</p>
+                <p class="text-blue-200 text-sm">Payments</p>
+              </div>
+              <div class="bg-white/10 rounded-xl p-4 text-center">
+                <i class="fas fa-check-circle text-3xl text-yellow-400 mb-2"></i>
+                <p class="text-white text-2xl font-bold">98%</p>
+                <p class="text-blue-200 text-sm">Satisfaction</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-16 md:py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold text-blue-900">Everything You Need</h2>
+        <p class="text-gray-500 mt-4 max-w-2xl mx-auto">Powerful features designed to streamline your rental property management experience.</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-building text-blue-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Property Management</h3>
+          <p class="text-gray-500 text-sm">List, track, and manage all your properties with detailed information, vacancy tracking, and status updates.</p>
+        </div>
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-file-signature text-green-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Lease Management</h3>
+          <p class="text-gray-500 text-sm">Create and manage digital lease agreements, track lease status, and get automatic expiry notifications.</p>
+        </div>
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-credit-card text-yellow-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Rent Tracking</h3>
+          <p class="text-gray-500 text-sm">Record payments, track outstanding balances, and generate receipts. Monitor payment status at a glance.</p>
+        </div>
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-tools text-purple-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Maintenance Requests</h3>
+          <p class="text-gray-500 text-sm">Tenants can submit maintenance requests with priority levels. Landlords can track, assign, and resolve issues.</p>
+        </div>
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-bell text-red-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Automated Notifications</h3>
+          <p class="text-gray-500 text-sm">Automatic email notifications for rent reminders, maintenance updates, and lease expiry warnings.</p>
+        </div>
+        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+          <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+            <i class="fas fa-chart-bar text-indigo-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Reports & Analytics</h3>
+          <p class="text-gray-500 text-sm">Generate rent collection summaries, vacancy reports, and maintenance logs. Export to PDF or CSV.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="py-16 md:py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold text-blue-900">How It Works</h2>
+        <p class="text-gray-500 mt-4">Three simple steps to get started</p>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white text-2xl font-bold">1</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Create Account</h3>
+          <p class="text-gray-500 text-sm">Register as a landlord or tenant. Set up your profile in minutes.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white text-2xl font-bold">2</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Add or Find Property</h3>
+          <p class="text-gray-500 text-sm">Landlords list properties. Tenants search and view available rentals.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white text-2xl font-bold">3</span>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Manage & Track</h3>
+          <p class="text-gray-500 text-sm">Handle leases, payments, maintenance, and reports from one dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-16 md:py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-bold text-blue-900">About This Project</h2>
+          <p class="text-gray-600 mt-4 leading-relaxed">
+            The Online Rental Property Management System is a B.Sc. Computer Science final year project 
+            from Obong University, designed to centralize and streamline rental property operations.
+          </p>
+          <p class="text-gray-600 mt-4 leading-relaxed">
+            Built with modern web technologies including Node.js, MongoDB, and Tailwind CSS, this system 
+            provides a complete solution for property listing, tenant management, lease tracking, 
+            rent payment recording, and maintenance request handling.
+          </p>
+          <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <p class="text-blue-800 text-sm"><strong>Author:</strong> David Frank Uko (U1CS2204)</p>
+            <p class="text-blue-800 text-sm mt-1"><strong>University:</strong> Obong University, Nigeria</p>
+          </div>
+        </div>
+        <div class="bg-gray-100 rounded-2xl p-12 text-center">
+          <i class="fas fa-university text-6xl text-blue-900 mb-4"></i>
+          <h3 class="text-2xl font-bold text-blue-900">Obong University</h3>
+          <p class="text-gray-500 mt-2">Faculty of Computing and Information Technology</p>
+          <p class="text-gray-400 text-sm mt-1">Department of Computer Science</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-blue-900 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-3 gap-8">
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <i class="fas fa-building text-2xl"></i>
+            <span class="font-bold text-xl">RentalSystem</span>
+          </div>
+          <p class="text-blue-300 text-sm">Online Rental Property Management System — B.Sc. Computer Science Project.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Quick Links</h4>
+          <ul class="space-y-2 text-sm text-blue-300">
+            <li><a href="/index.html" class="hover:text-white">Home</a></li>
+            <li><a href="/properties.html" class="hover:text-white">Properties</a></li>
+            <li><a href="/login.html" class="hover:text-white">Login</a></li>
+            <li><a href="/register.html" class="hover:text-white">Register</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Contact</h4>
+          <ul class="space-y-2 text-sm text-blue-300">
+            <li><i class="fas fa-university mr-2"></i>Obong University</li>
+            <li><i class="fas fa-envelope mr-2"></i>info@obonguniversity.edu.ng</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-blue-800 mt-8 pt-8 text-center text-sm text-blue-400">
+        <p>&copy; 2024 David Frank Uko. All rights reserved. Obong University.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script>
+    function showToast(message, type = 'info') {
+      const container = document.querySelector('.toast-container') || (() => {
+        const c = document.createElement('div');
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+        return c;
+      })();
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+      toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span><button class="toast-close">&times;</button>`;
+      toast.querySelector('.toast-close').onclick = () => toast.remove();
+      container.appendChild(toast);
+      setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+  </script>
+</body>
+</html>
+

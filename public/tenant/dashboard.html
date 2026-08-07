@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenant Dashboard - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Tenant Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/tenant/dashboard.html" class="active"><i class="fas fa-chart-pie"></i>Dashboard</a>
+      <a href="/tenant/properties.html"><i class="fas fa-building"></i>Browse Properties</a>
+      <a href="/tenant/my-property.html"><i class="fas fa-home"></i>My Property</a>
+      <div class="sidebar-section">Financial</div><a href="/tenant/payments.html"><i class="fas fa-credit-card"></i>Payments</a>
+      <div class="sidebar-section">Services</div><a href="/tenant/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/tenant/profile.html"><i class="fas fa-user-cog"></i>Profile</a>
+      <a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Dashboard</h2><p class="text-sm text-gray-500">Welcome, <span class="user-name font-medium">Tenant</span></p></div>
+      <div class="flex items-center gap-3"><span class="role-badge">Tenant</span><div class="w-9 h-9 bg-green-900 rounded-full flex items-center justify-center text-white text-sm font-bold user-avatar">T</div></div>
+    </header>
+    <div class="content-area">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-500">My Property</p><p class="text-xl font-bold text-gray-900 mt-1"><span id="myPropertyName" class="skeleton">Loading...</span></p></div><div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-home text-blue-600"></i></div></div></div>
+        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-500">Monthly Rent</p><p class="text-xl font-bold text-gray-900 mt-1">NGN <span id="monthlyRent" class="skeleton">0</span></p></div><div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-money-bill text-green-600"></i></div></div></div>
+        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-500">Payments Made</p><p class="text-xl font-bold text-gray-900 mt-1"><span id="paymentCount" class="skeleton">0</span></p></div><div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center"><i class="fas fa-credit-card text-yellow-600"></i></div></div></div>
+        <div class="stat-card"><div class="flex justify-between items-start"><div><p class="text-sm text-gray-500">Maintenance</p><p class="text-xl font-bold text-gray-900 mt-1"><span id="maintCount" class="skeleton">0</span></p></div><div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-tools text-red-600"></i></div></div></div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold mb-4">Lease Summary</h3>
+          <div id="leaseSummary"><p class="text-gray-400 text-sm">Loading...</p></div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold mb-4">Recent Payments</h3>
+          <div id="recentPaymentsList"><p class="text-gray-400 text-sm">Loading...</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      protectPage('tenant');
+      loadData();
+    });
+
+    async function loadData() {
+      try {
+        // Get active lease for tenant
+        const leaseResult = await apiGet('/leases/active');
+        const leases = leaseResult.data?.leases || [];
+        const myLease = leases.find(l => l.tenantId?._id === getUser().id);
+        if (myLease) {
+          document.getElementById('myPropertyName').textContent = myLease.propertyId?.title || 'N/A';
+          document.getElementById('monthlyRent').textContent = (myLease.monthlyRent || 0).toLocaleString();
+          document.getElementById('leaseSummary').innerHTML = `
+            <div class="space-y-2 text-sm"><p><span class="text-gray-500">Property:</span> <span class="font-medium">${myLease.propertyId?.title || 'N/A'}</span></p>
+            <p><span class="text-gray-500">Location:</span> ${myLease.propertyId?.location || 'N/A'}</p>
+            <p><span class="text-gray-500">Lease Period:</span> ${formatDate(myLease.startDate)} - ${formatDate(myLease.endDate)}</p>
+            <p><span class="text-gray-500">Security Deposit:</span> NGN ${(myLease.securityDeposit || 0).toLocaleString()}</p>
+            ${getStatusBadge(myLease.status)}</div>`;
+        } else {
+          document.getElementById('myPropertyName').textContent = 'None';
+          document.getElementById('leaseSummary').innerHTML = '<p class="text-gray-400">You don\'t have an active lease.</p>';
+        }
+      } catch(e) { document.getElementById('leaseSummary').innerHTML = '<p class="text-red-500">Failed to load</p>'; }
+
+      try {
+        const payResult = await apiGet('/payments');
+        const payments = payResult.data?.payments || [];
+        document.getElementById('paymentCount').textContent = payments.filter(p => p.status === 'paid').length;
+        const container = document.getElementById('recentPaymentsList');
+        if (payments.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm">No payments yet</p>'; return; }
+        container.innerHTML = payments.slice(0, 5).map(p => `
+          <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+            <div><p class="text-sm">${formatDate(p.paymentDate)}</p><p class="text-xs text-gray-400">${p.paymentMethod || 'N/A'}</p></div>
+            <div class="text-right"><p class="text-sm font-semibold">NGN ${(p.amount || 0).toLocaleString()}</p>${getStatusBadge(p.status)}</div>
+          </div>
+        `).join('');
+      } catch(e) {}
+
+      try {
+        const maintResult = await apiGet('/maintenance');
+        const requests = maintResult.data?.requests || [];
+        document.getElementById('maintCount').textContent = requests.length;
+      } catch(e) {}
+    }
+
+    function getUser() { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch(e) { return {}; } }
+  </script>
+</body>
+</html>
+

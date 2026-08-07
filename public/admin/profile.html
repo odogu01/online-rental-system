@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Admin - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-shield-alt text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-purple-300">Admin Portal</div></div></div>
+    <nav class="sidebar-nav"><div class="sidebar-section">Main</div><a href="/admin/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/admin/users.html"><i class="fas fa-users-cog"></i>Users</a><a href="/admin/properties.html"><i class="fas fa-building"></i>Properties</a><a href="/admin/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/admin/disputes.html"><i class="fas fa-gavel"></i>Disputes</a><a href="/admin/reports.html"><i class="fas fa-chart-bar"></i>Reports</a><div class="sidebar-section">Account</div><a href="#" class="active"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Admin Profile</h2><p class="text-sm text-gray-500">Manage your account</p></div>
+    </header>
+    <div class="content-area">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold mb-4">Profile Information</h3>
+          <form id="profileForm" onsubmit="return updateProfile(event)">
+            <div class="space-y-3">
+              <div><label class="label">Full Name</label><input type="text" id="fullName" class="input" required></div>
+              <div><label class="label">Email</label><input type="email" id="email" class="input" readonly></div>
+              <div><label class="label">Phone Number</label><input type="tel" id="phoneNumber" class="input"></div>
+              <div><label class="label">Role</label><input type="text" id="role" class="input" readonly></div>
+            </div>
+            <div id="profileMessage" class="hidden mt-4"></div>
+            <button type="submit" id="profileBtn" class="btn btn-primary mt-4">Update Profile</button>
+          </form>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <h3 class="font-semibold mb-4">Change Password</h3>
+          <form id="passwordForm" onsubmit="return changePassword(event)">
+            <div class="space-y-3">
+              <div><label class="label">Current Password</label><input type="password" id="currentPassword" class="input" required></div>
+              <div><label class="label">New Password</label><input type="password" id="newPassword" class="input" required minlength="8"></div>
+              <div><label class="label">Confirm New Password</label><input type="password" id="confirmPassword" class="input" required></div>
+            </div>
+            <div id="passwordMessage" class="hidden mt-4"></div>
+            <button type="submit" id="passwordBtn" class="btn btn-primary mt-4">Change Password</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { protectPage('admin'); loadProfile(); });
+    async function loadProfile() {
+      try {
+        const result = await apiGet('/auth/profile');
+        const u = result.data;
+        document.getElementById('fullName').value = u.fullName || '';
+        document.getElementById('email').value = u.email || '';
+        document.getElementById('phoneNumber').value = u.phoneNumber || '';
+        document.getElementById('role').value = (u.role || '').charAt(0).toUpperCase() + (u.role || '').slice(1);
+      } catch(e) { showToast('Failed to load profile', 'error'); }
+    }
+    async function updateProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('profileBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+      try { await apiPut('/auth/profile', { fullName: document.getElementById('fullName').value, phoneNumber: document.getElementById('phoneNumber').value }); showToast('Profile updated!', 'success'); }
+      catch(e) { showFormError('profileMessage', e); }
+      finally { btn.disabled = false; btn.innerHTML = 'Update Profile'; }
+    }
+    async function changePassword(e) {
+      e.preventDefault();
+      const newPw = document.getElementById('newPassword').value;
+      const confirmPw = document.getElementById('confirmPassword').value;
+      if (newPw !== confirmPw) { showFormError('passwordMessage', { message: 'Passwords do not match' }); return; }
+      if (newPw.length < 8) { showFormError('passwordMessage', { message: 'Password must be at least 8 characters' }); return; }
+      const btn = document.getElementById('passwordBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Changing...';
+      try { await apiPut('/auth/change-password', { currentPassword: document.getElementById('currentPassword').value, newPassword: newPw }); showToast('Password changed!', 'success'); document.getElementById('passwordForm').reset(); }
+      catch(e) { showFormError('passwordMessage', e); }
+      finally { btn.disabled = false; btn.innerHTML = 'Change Password'; }
+    }
+  </script>
+</body>
+</html>
+

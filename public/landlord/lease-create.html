@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Lease - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html" class="active"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Create Lease Agreement</h2><p class="text-sm text-gray-500">Bind a tenant to a property</p></div>
+    </header>
+    <div class="content-area">
+      <div class="bg-white rounded-xl shadow-sm p-6 max-w-3xl">
+        <form id="leaseForm" onsubmit="return handleCreate(event)">
+          <div class="grid md:grid-cols-2 gap-4 mb-4">
+            <div><label class="label">Property</label><select id="propertyId" class="input" required><option value="">Loading...</option></select></div>
+            <div><label class="label">Tenant</label><select id="tenantId" class="input" required><option value="">Loading...</option></select></div>
+            <div><label class="label">Start Date</label><input type="date" id="startDate" class="input" required></div>
+            <div><label class="label">End Date</label><input type="date" id="endDate" class="input" required></div>
+            <div><label class="label">Monthly Rent (NGN)</label><input type="number" id="monthlyRent" class="input" min="0" required></div>
+            <div><label class="label">Security Deposit (NGN)</label><input type="number" id="securityDeposit" class="input" min="0" required></div>
+          </div>
+          <div id="formMessage" class="hidden mb-4"></div>
+          <div class="flex gap-3"><button type="submit" id="submitBtn" class="btn btn-primary">Create Lease</button><a href="/landlord/leases.html" class="btn btn-secondary">Cancel</a></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      protectPage('landlord');
+      loadFormData();
+      // Default dates
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').value = today;
+      const end = new Date(); end.setFullYear(end.getFullYear() + 1);
+      document.getElementById('endDate').value = end.toISOString().split('T')[0];
+    });
+
+    async function loadFormData() {
+      try {
+        const [propResult, tenantResult] = await Promise.all([apiGet('/properties', { status: 'vacant' }), apiGet('/leases/tenants')]);
+        const props = propResult.data?.properties || [];
+        const tenants = tenantResult.data?.tenants || [];
+        const propSelect = document.getElementById('propertyId');
+        propSelect.innerHTML = '<option value="">Select Property</option>' + props.map(p => `<option value="${p._id}">${p.title} - NGN ${(p.rentAmount || 0).toLocaleString()}</option>`).join('');
+        const tenantSelect = document.getElementById('tenantId');
+        tenantSelect.innerHTML = '<option value="">Select Tenant</option>' + tenants.map(t => `<option value="${t._id}">${t.fullName} (${t.email})</option>`).join('');
+      } catch(e) { showToast('Failed to load form data', 'error'); }
+    }
+
+    async function handleCreate(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Creating...';
+      try {
+        const data = { propertyId: document.getElementById('propertyId').value, tenantId: document.getElementById('tenantId').value, startDate: document.getElementById('startDate').value, endDate: document.getElementById('endDate').value, monthlyRent: Number(document.getElementById('monthlyRent').value), securityDeposit: Number(document.getElementById('securityDeposit').value) };
+        await apiPost('/leases', data);
+        showToast('Lease created successfully!', 'success');
+        setTimeout(() => window.location.href = '/landlord/leases.html', 1500);
+      } catch(e) { showFormError('formMessage', e); btn.disabled = false; btn.innerHTML = 'Create Lease'; }
+    }
+  </script>
+</body>
+</html>
+

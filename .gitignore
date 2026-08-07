@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment variables - NEVER commit secrets!
+.env
+.env.local
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Uploads (ephemeral on Vercel anyway)
+uploads/
+public/uploads/
+
+# Test coverage
+coverage/
+
+# Vercel
+.vercel/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp

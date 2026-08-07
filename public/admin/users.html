@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Admin - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-shield-alt text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-purple-300">Admin Portal</div></div></div>
+    <nav class="sidebar-nav"><div class="sidebar-section">Main</div><a href="/admin/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/admin/users.html" class="active"><i class="fas fa-users-cog"></i>Users</a><a href="/admin/properties.html"><i class="fas fa-building"></i>Properties</a><a href="/admin/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/admin/disputes.html"><i class="fas fa-gavel"></i>Disputes</a><a href="/admin/reports.html"><i class="fas fa-chart-bar"></i>Reports</a><div class="sidebar-section">Account</div><a href="/admin/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">User Management</h2><p class="text-sm text-gray-500">Manage all system users</p></div>
+    </header>
+    <div class="content-area">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card"><p class="text-sm text-gray-500">Total Users</p><p class="text-2xl font-bold" id="userTotal">--</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Landlords</p><p class="text-2xl font-bold text-blue-600" id="userLandlords">--</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Tenants</p><p class="text-2xl font-bold text-green-600" id="userTenants">--</p></div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <div class="p-4 border-b flex flex-wrap gap-3">
+          <input type="text" id="userSearch" class="input w-48" placeholder="Search name, email, phone..." onkeyup="debounceSearch()">
+          <select id="roleFilter" class="input w-32" onchange="loadUsers()">
+            <option value="">All Roles</option><option value="landlord">Landlord</option><option value="tenant">Tenant</option><option value="admin">Admin</option>
+          </select>
+          <select id="statusFilter" class="input w-32" onchange="loadUsers()">
+            <option value="">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
+          </select>
+          <button onclick="loadUsers()" class="btn btn-primary btn-sm"><i class="fas fa-sync mr-1"></i>Refresh</button>
+        </div>
+        <div id="usersContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading users...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Detail Modal -->
+  <div id="userModal" class="modal"><div class="modal-content p-6" style="max-width:600px">
+    <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">User Details</h3><button onclick="closeModal('userModal')" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
+    <div id="userDetailContent"><p class="text-gray-400">Loading...</p></div>
+  </div></div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script>
+    let searchTimeout;
+    function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadUsers, 400); }
+
+    document.addEventListener('DOMContentLoaded', () => { protectPage('admin'); loadStats(); loadUsers(); });
+
+    async function loadStats() {
+      try {
+        const result = await apiGet('/admin/stats');
+        const s = result.data;
+        if (s?.users) {
+          document.getElementById('userTotal').textContent = s.users.total || 0;
+          document.getElementById('userLandlords').textContent = s.users.landlords || 0;
+          document.getElementById('userTenants').textContent = s.users.tenants || 0;
+        }
+      } catch(e) { /* stats are non-critical */ }
+    }
+
+    async function loadUsers() {
+      const container = document.getElementById('usersContainer');
+      try {
+        const params = {};
+        const q = document.getElementById('userSearch').value; if (q) params.search = q;
+        const role = document.getElementById('roleFilter').value; if (role) params.role = role;
+        const status = document.getElementById('statusFilter').value; if (status) params.status = status;
+
+        const result = await apiGet('/admin/users', params);
+        const data = result.data;
+        const users = data?.users || [];
+        const pagination = data?.pagination || {};
+
+        if (users.length === 0) {
+          container.innerHTML = '<p class="text-center text-gray-400 py-8">No users found</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="table"><thead><tr>
+              <th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th>
+            </tr></thead><tbody>
+            ${users.map(u => `<tr>
+              <td class="font-medium">${u.fullName}</td>
+              <td class="text-sm">${u.email}</td>
+              <td>${getRoleBadge(u.role)}</td>
+              <td class="text-sm">${u.phoneNumber || '-'}</td>
+              <td>${u.isActive !== false ? '<span class="status-badge status-paid">Active</span>' : '<span class="status-badge status-overdue">Inactive</span>'}</td>
+              <td class="text-sm text-gray-500">${formatDate(u.createdAt)}</td>
+              <td>
+                <button onclick="viewUser('${u._id}')" class="text-blue-600 hover:underline text-sm mr-2"><i class="fas fa-eye"></i></button>
+                <button onclick="toggleStatus('${u._id}', ${u.isActive !== false})" class="text-sm ${u.isActive !== false ? 'text-red-600' : 'text-green-600'} hover:underline mr-2">
+                  <i class="fas ${u.isActive !== false ? 'fa-ban' : 'fa-check'}"></i>
+                </button>
+                <button onclick="deleteUser('${u._id}')" class="text-red-600 hover:underline text-sm"><i class="fas fa-trash"></i></button>
+              </td>
+            </tr>`).join('')}
+            </tbody></table>
+            ${pagination.pages > 1 ? `<div class="p-4 text-sm text-gray-500 text-center">Page ${pagination.page} of ${pagination.pages} (${pagination.total} total users)</div>` : ''}
+          </div>`;
+      } catch(e) { container.innerHTML = `<p class="text-red-500 text-center py-8">${e.message || 'Failed to load users'}</p>`; }
+    }
+
+    function getRoleBadge(role) {
+      const colors = { admin: 'bg-purple-100 text-purple-700', landlord: 'bg-blue-100 text-blue-700', tenant: 'bg-green-100 text-green-700' };
+      return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${colors[role] || 'bg-gray-100'}">${role}</span>`;
+    }
+
+    async function viewUser(id) {
+      openModal('userModal');
+      document.getElementById('userDetailContent').innerHTML = '<p class="text-gray-400">Loading...</p>';
+      try {
+        const result = await apiGet(`/admin/users/${id}`);
+        const { user, stats } = result.data;
+        document.getElementById('userDetailContent').innerHTML = `
+          <div class="space-y-3 text-sm">
+            <div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">${(user.fullName || '').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+            <div><p class="font-semibold text-base">${user.fullName}</p><p class="text-gray-500">${user.email}</p></div></div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><p class="text-gray-500">Role</p>${getRoleBadge(user.role)}</div>
+              <div><p class="text-gray-500">Status</p>${user.isActive !== false ? '<span class="text-green-600 font-medium">Active</span>' : '<span class="text-red-600 font-medium">Inactive</span>'}</div>
+              <div><p class="text-gray-500">Phone</p><p>${user.phoneNumber || 'N/A'}</p></div>
+              <div><p class="text-gray-500">Joined</p><p>${formatDate(user.createdAt)}</p></div>
+            </div>
+            ${stats ? `<div class="mt-4 pt-4 border-t"><h4 class="font-semibold text-sm mb-2">Activity Stats</h4><div class="grid grid-cols-3 gap-2 text-center">
+              ${Object.entries(stats).map(([k,v]) => `<div class="bg-gray-50 rounded p-2"><p class="text-lg font-bold text-blue-600">${v}</p><p class="text-xs text-gray-500 capitalize">${k.replace(/([A-Z])/g,' $1')}</p></div>`).join('')}
+            </div></div>` : ''}
+            <div class="flex gap-2 mt-4 pt-4 border-t">
+              <select id="changeRoleSelect" class="input text-sm"><option value="landlord">Landlord</option><option value="tenant">Tenant</option><option value="admin">Admin</option></select>
+              <button onclick="changeRole('${user._id}')" class="btn btn-primary btn-sm">Change Role</button>
+            </div>
+          </div>`;
+      } catch(e) { document.getElementById('userDetailContent').innerHTML = '<p class="text-red-500">Failed to load details</p>'; }
+    }
+
+    async function changeRole(id) {
+      const role = document.getElementById('changeRoleSelect').value;
+      try {
+        await apiPut(`/admin/users/${id}/role`, { role });
+        showToast(`Role changed to ${role}`, 'success');
+        closeModal('userModal');
+        loadUsers();
+      } catch(e) { showToast(e.message || 'Failed', 'error'); }
+    }
+
+    async function toggleStatus(id, currentlyActive) {
+      if (!confirm(`${currentlyActive ? 'Deactivate' : 'Activate'} this user?`)) return;
+      try {
+        await apiPut(`/admin/users/${id}/status`, { isActive: !currentlyActive });
+        showToast(`User ${currentlyActive ? 'deactivated' : 'activated'}`, 'success');
+        loadUsers();
+      } catch(e) { showToast(e.message || 'Failed', 'error'); }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+      try {
+        await apiDelete(`/admin/users/${id}`);
+        showToast('User deleted', 'success');
+        loadUsers();
+      } catch(e) { showToast(e.message || 'Failed', 'error'); }
+    }
+  </script>
+</body>
+</html>
+

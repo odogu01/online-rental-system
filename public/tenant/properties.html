@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Properties - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Tenant Portal</div></div></div>
+    <nav class="sidebar-nav"><div class="sidebar-section">Main</div><a href="/tenant/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/tenant/properties.html" class="active"><i class="fas fa-building"></i>Browse Properties</a><a href="/tenant/my-property.html"><i class="fas fa-home"></i>My Property</a><div class="sidebar-section">Financial</div><a href="/tenant/payments.html"><i class="fas fa-credit-card"></i>Payments</a><div class="sidebar-section">Services</div><a href="/tenant/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a><div class="sidebar-section">Account</div><a href="/tenant/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a></nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Browse Properties</h2><p class="text-sm text-gray-500">Find available rental properties</p></div>
+    </header>
+    <div class="content-area">
+      <div class="filter-bar">
+        <div class="flex flex-wrap gap-3">
+          <input type="number" id="minRent" placeholder="Min Rent" class="input w-28">
+          <input type="number" id="maxRent" placeholder="Max Rent" class="input w-28">
+          <input type="number" id="bedrooms" placeholder="Bedrooms" class="input w-24">
+          <input type="text" id="location" placeholder="Location" class="input w-40">
+          <button onclick="loadProperties()" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i>Search</button>
+        </div>
+      </div>
+      <div id="propertiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><p class="text-gray-400 col-span-full text-center py-8">Loading properties...</p></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/property.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadProperties(); });
+
+    async function loadProperties() {
+      const container = document.getElementById('propertiesGrid');
+      container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
+      try {
+        const filters = {};
+        const min = document.getElementById('minRent').value; if(min) filters.minRent = min;
+        const max = document.getElementById('maxRent').value; if(max) filters.maxRent = max;
+        const bed = document.getElementById('bedrooms').value; if(bed) filters.bedrooms = bed;
+        const loc = document.getElementById('location').value; if(loc) filters.location = loc;
+        const result = await apiGet('/properties', { ...filters, status: 'vacant' });
+        const properties = result.data?.properties || [];
+        if (properties.length === 0) { container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No available properties found</p>'; return; }
+        container.innerHTML = properties.map(p => `
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <div class="h-32 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white"><i class="fas fa-building text-4xl opacity-50"></i></div>
+            <div class="p-4"><h3 class="font-semibold text-gray-900">${p.title}</h3>
+            <p class="text-sm text-gray-500 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${p.location}</p>
+            <div class="flex gap-3 mt-2 text-sm text-gray-500"><span><i class="fas fa-bed mr-1"></i>${p.bedrooms} Beds</span><span><i class="fas fa-bath mr-1"></i>${p.bathrooms} Baths</span></div>
+            <div class="flex justify-between items-center mt-3"><span class="text-lg font-bold text-blue-600">NGN ${(p.rentAmount || 0).toLocaleString()}<span class="text-sm text-gray-400 font-normal">/mo</span></span>
+            ${getStatusBadge(p.status)}</div>
+            ${p.amenities ? `<p class="text-xs text-gray-400 mt-2"><i class="fas fa-star mr-1"></i>${p.amenities}</p>` : ''}
+            <button onclick="showInterest('${p._id}')" class="btn btn-primary btn-sm w-full mt-3" ${p.status !== 'vacant' ? 'disabled' : ''}><i class="fas fa-envelope mr-1"></i>Contact Landlord</button>
+            </div>
+          </div>`).join('');
+      } catch(e) { container.innerHTML = '<p class="text-red-500 col-span-full text-center py-8">Failed to load properties</p>'; }
+    }
+
+    function showInterest(id) {
+      showToast('Inquiry sent to landlord. They will contact you soon.', 'success');
+    }
+  </script>
+</body>
+</html>
+
