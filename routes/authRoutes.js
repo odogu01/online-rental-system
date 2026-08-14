@@ -23,7 +23,7 @@ router.post(
       .withMessage('Password must contain uppercase, lowercase, and a number'),
     body('role')
       .optional()
-      .isIn(['landlord', 'tenant', 'admin']).withMessage('Role must be landlord, tenant, or admin'),
+      .isIn(['landlord', 'tenant']).withMessage('Role must be landlord or tenant'),
     body('phoneNumber')
       .optional()
       .matches(/^\+?[\d\s\-()]{7,20}$/).withMessage('Invalid phone number format'),

@@ -27,7 +27,7 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('admin'); loadAllLeases(); });
 
@@ -40,14 +40,14 @@
         const leases = result.data?.leases || [];
         if (leases.length === 0) { container.innerHTML = '<p class="text-center text-gray-400 py-8">No leases found</p>'; return; }
         container.innerHTML = `<div class="overflow-x-auto"><table class="table"><thead><tr><th>Property</th><th>Tenant</th><th>Landlord</th><th>Period</th><th>Rent</th><th>Status</th></tr></thead><tbody>${leases.map(l => `<tr>
-          <td class="font-medium">${l.propertyId?.title || 'N/A'}</td>
-          <td>${l.tenantId?.fullName || 'N/A'}</td>
-          <td class="text-sm">${l.propertyId?.landlordId?.fullName || 'N/A'}</td>
-          <td class="text-sm">${formatDate(l.startDate)} - ${formatDate(l.endDate)}</td>
+          <td class="font-medium">${escapeHtml(l.propertyId?.title || 'N/A')}</td>
+          <td>${escapeHtml(l.tenantId?.fullName || 'N/A')}</td>
+          <td class="text-sm">${escapeHtml(l.propertyId?.landlordId?.fullName || 'N/A')}</td>
+          <td class="text-sm">${escapeHtml(formatDate(l.startDate))} - ${escapeHtml(formatDate(l.endDate))}</td>
           <td>NGN ${(l.monthlyRent || 0).toLocaleString()}</td>
           <td>${getStatusBadge(l.status)}</td>
         </tr>`).join('')}</tbody></table></div>`;
-      } catch(e) { container.innerHTML = '<p class="text-red-500 text-center py-8">Failed to load leases</p>'; }
+      } catch(e) { container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(e.message || 'Failed to load leases')}</p>`; }
     }
   </script>
 </body>

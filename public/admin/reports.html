@@ -19,19 +19,19 @@
     </header>
     <div class="content-area">
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="stat-card cursor-pointer hover:shadow-md" onclick="generateReport('rent-collection')">
+<div class="stat-card cursor-pointer hover:shadow-md" onclick="viewReport('/reports/rent-collection', 'Rent Collection')">
           <div class="flex items-center gap-3"><div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"><i class="fas fa-money-bill-wave text-green-600"></i></div>
           <div><p class="font-semibold">Rent Collection</p><p class="text-xs text-gray-400">Revenue overview</p></div></div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-md" onclick="generateReport('vacancy')">
+        <div class="stat-card cursor-pointer hover:shadow-md" onclick="viewReport('/reports/vacancy', 'Vacancy')">
           <div class="flex items-center gap-3"><div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><i class="fas fa-door-open text-blue-600"></i></div>
           <div><p class="font-semibold">Vacancy</p><p class="text-xs text-gray-400">Occupancy analysis</p></div></div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-md" onclick="generateReport('maintenance')">
+        <div class="stat-card cursor-pointer hover:shadow-md" onclick="viewReport('/reports/maintenance', 'Maintenance')">
           <div class="flex items-center gap-3"><div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center"><i class="fas fa-tools text-yellow-600"></i></div>
           <div><p class="font-semibold">Maintenance</p><p class="text-xs text-gray-400">Issue tracking</p></div></div>
         </div>
-        <div class="stat-card cursor-pointer hover:shadow-md" onclick="generateReport('arrears')">
+        <div class="stat-card cursor-pointer hover:shadow-md" onclick="viewReport('/reports/arrears', 'Arrears')">
           <div class="flex items-center gap-3"><div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center"><i class="fas fa-exclamation-triangle text-red-600"></i></div>
           <div><p class="font-semibold">Arrears</p><p class="text-xs text-gray-400">Overdue payments</p></div></div>
         </div>
@@ -41,7 +41,7 @@
         <div class="flex gap-3 items-center mb-4">
           <select id="reportType" class="input"><option value="rent-collection">Rent Collection</option><option value="vacancy">Vacancy Report</option><option value="maintenance">Maintenance Log</option><option value="arrears">Arrears Report</option></select>
           <select id="reportFormat" class="input w-24"><option value="json">JSON</option><option value="pdf">PDF</option><option value="csv">CSV</option></select>
-          <button onclick="generateReport(document.getElementById('reportType').value)" class="btn btn-primary btn-sm"><i class="fas fa-eye mr-1"></i>View</button>
+          <button onclick="viewReport('/reports/' + document.getElementById('reportType').value, document.getElementById('reportType').options[document.getElementById('reportType').selectedIndex].text)" class="btn btn-primary btn-sm"><i class="fas fa-eye mr-1"></i>View</button>
           <button onclick="downloadReport()" class="btn btn-secondary btn-sm"><i class="fas fa-download mr-1"></i>Download</button>
         </div>
         <div id="reportView"><p class="text-gray-400 text-center py-12">Select a report type and click "View"</p></div>
@@ -49,32 +49,35 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/report.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/report.js"></script><script src="/js/ui.js"></script>
   <script>
-    let currentReportData = null;
+    let currentReport = null;
     document.addEventListener('DOMContentLoaded', () => { protectPage('admin'); });
 
-    async function generateReport(type) {
-      document.getElementById('reportType').value = type;
-      document.getElementById('reportView').innerHTML = '<p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
-      try {
-        const result = await apiGet(`/reports/${type}`);
-        currentReportData = result.data;
-        viewReportInPage(type, currentReportData, 'reportView');
-      } catch(e) { document.getElementById('reportView').innerHTML = `<p class="text-red-500 text-center py-8">${e.message || 'Failed'}</p>`; }
+    function viewReport(endpoint, title) {
+      currentReport = { endpoint, title };
+      const select = document.getElementById('reportType');
+      const type = endpoint.replace('/reports/', '');
+      if (type === 'rent-collection') select.value = 'rent-collection';
+      else if (type === 'vacancy') select.value = 'vacancy';
+      else if (type === 'maintenance') select.value = 'maintenance';
+      else if (type === 'arrears') select.value = 'arrears';
+      selectReport(endpoint, title);
     }
 
     async function downloadReport() {
-      if (!currentReportData) { showToast('Generate a report first', 'warning'); return; }
-      const type = document.getElementById('reportType').value;
+      if (!currentReport) { showToast('Generate a report first', 'warning'); return; }
       const format = document.getElementById('reportFormat').value;
       if (format === 'json') {
-        const blob = new Blob([JSON.stringify(currentReportData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `${type}-report.json`; a.click();
-        URL.revokeObjectURL(url);
+        try {
+          const result = await apiGet(currentReport.endpoint);
+          const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `${currentReport.title.replace(/\s+/g, '-').toLowerCase()}-report.json`; a.click();
+          URL.revokeObjectURL(url);
+        } catch(e) { showToast(e.message || 'Download failed', 'error'); }
       } else {
-        try { await downloadFile(`/reports/${type}?format=${format}`, `${type}-report.${format}`); }
+        try { await generateReport(currentReport.endpoint, { format }); }
         catch(e) { showToast(e.message || 'Download failed', 'error'); }
       }
     }

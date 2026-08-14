@@ -27,37 +27,49 @@
       </div>
 
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <div id="requestsContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p></div>
+        <table class="table">
+          <thead>
+            <tr><th>Subject</th><th>Property</th><th>Urgency</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="requestsContainer"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
   <!-- Detail Modal -->
-  <div id="detailModal" class="modal"><div class="modal-content p-6" style="max-width:550px">
+  <div id="detailModal" class="modal hidden"><div class="modal-content p-6" style="max-width:550px">
     <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Request Details</h3><button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-gray-700">&times;</button></div>
     <div id="detailContent"><p class="text-gray-400">Loading...</p></div>
   </div></div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/maintenance.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script><script src="/js/maintenance.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadMyRequests(); });
 
     async function loadMyRequests() {
       try {
         await loadMaintenanceRequests('requestsContainer');
-        const result = await apiGet('/maintenance');
-        const requests = result.data?.requests || [];
-        document.getElementById('myTotal').textContent = requests.length;
-        document.getElementById('myPending').textContent = requests.filter(r => r.status === 'pending').length;
-        document.getElementById('myInProgress').textContent = requests.filter(r => r.status === 'in-progress').length;
-        document.getElementById('myCompleted').textContent = requests.filter(r => r.status === 'completed').length;
-      } catch(e) { document.getElementById('requestsContainer').innerHTML = '<p class="text-red-500 p-4">Failed to load</p>'; }
+      } catch(e) {}
+
+      try {
+        const result = await apiGet('/maintenance/statistics');
+        const summary = result.data?.summary || {};
+        document.getElementById('myTotal').textContent = summary.total || 0;
+        document.getElementById('myPending').textContent = summary.pending || 0;
+        document.getElementById('myInProgress').textContent = summary.inProgress || 0;
+        document.getElementById('myCompleted').textContent = summary.completed || 0;
+      } catch(e) {}
     }
 
-    window.viewDetails = async function(id) {
+    // Open the detail modal, then delegate rendering to the shared loader
+    // (loadMaintenanceRequests' View buttons call viewRequestDetails(id, 'detailContent')).
+    const _originalViewRequestDetails = window.viewRequestDetails;
+    window.viewRequestDetails = async function(requestId, contentContainerId) {
       openModal('detailModal');
-      document.getElementById('detailContent').innerHTML = '<p class="text-gray-400">Loading...</p>';
-      try { await viewRequestDetails(id, 'detailContent'); } catch(e) { document.getElementById('detailContent').innerHTML = '<p class="text-red-500">Failed to load</p>'; }
+      const container = contentContainerId ? document.getElementById(contentContainerId) : null;
+      if (container) container.innerHTML = '<p class="text-gray-400">Loading...</p>';
+      if (typeof _originalViewRequestDetails === 'function') return _originalViewRequestDetails(requestId, contentContainerId);
     };
   </script>
 </body>

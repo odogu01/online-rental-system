@@ -24,14 +24,13 @@
     </header>
     <div class="content-area">
       <div class="bg-white rounded-xl shadow-sm p-6 max-w-3xl">
-        <form id="paymentForm" onsubmit="return handleRecord(event)">
+<form id="paymentForm" onsubmit="return handleRecord(event)">
           <div class="grid md:grid-cols-2 gap-4 mb-4">
-            <div><label class="label">Active Lease</label><select id="leaseId" class="input" required><option value="">Loading...</option></select></div>
-            <div><label class="label">Amount (NGN)</label><input type="number" id="amount" class="input" min="0" step="0.01" required></div>
-            <div><label class="label">Payment Date</label><input type="date" id="paymentDate" class="input" required></div>
-            <div><label class="label">Due Date</label><input type="date" id="dueDate" class="input" required></div>
-            <div><label class="label">Payment Method</label><select id="paymentMethod" class="input" required><option value="">Select Method</option><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="cheque">Cheque</option><option value="pos">POS</option></select></div>
-            <div><label class="label">Status</label><select id="status" class="input" required><option value="paid">Paid</option><option value="pending">Pending</option></select></div>
+            <div><label class="label">Active Lease</label><select id="leaseId" name="leaseId" class="input" required><option value="">Loading...</option></select></div>
+            <div><label class="label">Amount (NGN)</label><input type="number" id="amount" name="amount" class="input" min="0" step="0.01" required></div>
+            <div><label class="label">Payment Date</label><input type="date" id="paymentDate" name="paymentDate" class="input" required></div>
+            <div><label class="label">Due Date</label><input type="date" id="dueDate" name="dueDate" class="input" required></div>
+            <div><label class="label">Payment Method</label><select id="paymentMethod" name="paymentMethod" class="input" required><option value="">Select Method</option><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="online">Online</option><option value="cheque">Cheque</option><option value="pos">POS</option></select></div>
           </div>
           <div id="formMessage" class="hidden mb-4"></div>
           <div class="flex gap-3"><button type="submit" id="submitBtn" class="btn btn-primary">Record Payment</button><a href="/landlord/payments.html" class="btn btn-secondary">Cancel</a></div>
@@ -40,7 +39,7 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/payment.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/payment.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       protectPage('landlord');
@@ -53,8 +52,9 @@
         const result = await apiGet('/leases/active');
         const leases = result.data?.leases || [];
         const select = document.getElementById('leaseId');
+        if (leases.length === 0) { select.innerHTML = '<option value="">No active leases</option>'; return; }
         select.innerHTML = '<option value="">Select Lease</option>' + leases.map(l =>
-          `<option value="${l._id}">${l.propertyId?.title || 'Property'} - ${l.tenantId?.fullName || 'Tenant'} (NGN ${(l.monthlyRent || 0).toLocaleString()})</option>`
+          `<option value="${escapeHtml(l._id)}">${escapeHtml(l.propertyId?.title || 'Property')} - ${escapeHtml(l.tenantId?.fullName || 'Tenant')} (NGN ${(l.monthlyRent || 0).toLocaleString()})</option>`
         ).join('');
         // Auto-fill amount
         select.onchange = function() {
@@ -66,13 +66,10 @@
 
     async function handleRecord(e) {
       e.preventDefault();
-      const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Recording...';
       try {
-        const data = { leaseId: document.getElementById('leaseId').value, amount: Number(document.getElementById('amount').value), paymentDate: document.getElementById('paymentDate').value, dueDate: document.getElementById('dueDate').value, paymentMethod: document.getElementById('paymentMethod').value, status: document.getElementById('status').value };
-        await apiPost('/payments', data);
-        showToast('Payment recorded successfully!', 'success');
-        setTimeout(() => window.location.href = '/landlord/payments.html', 1500);
-      } catch(e) { showFormError('formMessage', e); btn.disabled = false; btn.innerHTML = 'Record Payment'; }
+        await submitPaymentForm(e);
+        // submitPaymentForm shows a toast and redirects on success
+      } catch(err) { showFormError('formMessage', err); }
     }
   </script>
 </body>

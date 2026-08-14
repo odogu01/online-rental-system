@@ -15,15 +15,15 @@ async function loadPayments(tableBodyId, params = {}) {
 
     tbody.innerHTML = payments.map(p => `
       <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm text-gray-500">${p.paymentReference || 'N/A'}</td>
-        <td class="px-4 py-3 text-sm text-gray-900">${truncate(p.leaseId?.propertyId?.title || 'N/A', 20)}</td>
+        <td class="px-4 py-3 text-sm text-gray-500">${escapeHtml(p.leaseId?.propertyId?.title || 'N/A')}</td>
         <td class="px-4 py-3 text-sm font-medium text-gray-900">NGN ${(p.amount || 0).toLocaleString()}</td>
-        <td class="px-4 py-3 text-sm">${getStatusBadge(p.status)}</td>
+        <td class="px-4 py-3 text-sm text-gray-500">${escapeHtml((p.paymentMethod || 'N/A').replace(/_/g, ' '))}</td>
         <td class="px-4 py-3 text-sm text-gray-500">${formatDate(p.paymentDate)}</td>
         <td class="px-4 py-3 text-sm text-gray-500">${formatDate(p.dueDate)}</td>
+        <td class="px-4 py-3 text-sm">${getStatusBadge(p.status)}</td>
         <td class="px-4 py-3 text-sm">
           <div class="flex gap-2">
-            <a href="/payments/receipt/${p._id}" onclick="downloadReceipt(event, '${p._id}')" class="text-blue-600 hover:text-blue-800" title="Download Receipt"><i class="fas fa-download"></i></a>
+            <button onclick="downloadReceipt('${p._id}')" class="text-blue-600 hover:text-blue-800" title="Download Receipt"><i class="fas fa-download"></i></button>
           </div>
         </td>
       </tr>
@@ -34,7 +34,7 @@ async function loadPayments(tableBodyId, params = {}) {
 }
 
 async function downloadReceipt(event, paymentId) {
-  event.preventDefault();
+  if (event && event.preventDefault) event.preventDefault();
   try {
     await downloadFile(`/payments/receipt/${paymentId}`, `receipt-${paymentId}.pdf`);
   } catch (error) {

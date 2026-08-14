@@ -123,19 +123,44 @@ const commonValidators = {
       })
 };
 
-const sanitizeBody = (fields) => {
-  return (req, res, next) => {
-    fields.forEach(field => {
-      if (req.body[field] && typeof req.body[field] === 'string') {
-        req.body[field] = req.body[field]
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-          .replace(/javascript\s*:/gi, '')
-          .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-          .trim();
+const SCRIPT_TAG_RE = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+const JAVASCRIPT_URI_RE = /\s*:\s*javascript\s*:/gi;
+const EVENT_HANDLER_RE = /\son\w+\s*=\s*["']?[^"'>]*["']?/gi;
+const EVENT_HANDLER_ATTR_RE = /^on\w+$/i;
+
+const sanitizeString = (value) => {
+  return String(value)
+    .replace(SCRIPT_TAG_RE, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(EVENT_HANDLER_RE, '')
+    .trim();
+};
+
+const sanitizeNode = (node) => {
+  if (typeof node === 'string') {
+    return sanitizeString(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(item => sanitizeNode(item));
+  }
+  if (node && typeof node === 'object') {
+    const result = {};
+    for (const key of Object.keys(node)) {
+      if (EVENT_HANDLER_ATTR_RE.test(key)) {
+        continue;
       }
-    });
-    next();
-  };
+      result[key] = sanitizeNode(node[key]);
+    }
+    return result;
+  }
+  return node;
+};
+
+const sanitizeBody = (req, res, next) => {
+  if (req.body && (typeof req.body === 'object')) {
+    req.body = sanitizeNode(req.body);
+  }
+  next();
 };
 
 module.exports = {

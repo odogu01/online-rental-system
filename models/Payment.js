@@ -22,8 +22,8 @@ const paymentSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     enum: {
-      values: ['cash', 'bank_transfer', 'online', 'cheque'],
-      message: 'Payment method must be cash, bank_transfer, online, or cheque'
+      values: ['cash', 'bank_transfer', 'online', 'pos', 'cheque'],
+      message: 'Payment method must be cash, bank_transfer, online, pos, or cheque'
     },
     default: 'cash'
   },

@@ -1,5 +1,7 @@
 const MaintenanceRequest = require('../models/MaintenanceRequest');
 const Property = require('../models/Property');
+const Lease = require('../models/Lease');
+const Notification = require('../models/Notification');
 const { AppError } = require('../middleware/errorMiddleware');
 const { sendMaintenanceUpdate, sendMaintenanceNotification } = require('../services/emailService');
 
@@ -10,6 +12,17 @@ exports.createRequest = async (req, res, next) => {
     const property = await Property.findById(propertyId).populate('landlordId', 'email fullName');
     if (!property) {
       throw new AppError('Property not found', 404, 'PROPERTY_NOT_FOUND');
+    }
+
+    if (req.user.role === 'tenant') {
+      const activeLease = await Lease.findOne({
+        tenantId: req.user._id,
+        propertyId,
+        status: 'active'
+      });
+      if (!activeLease) {
+        throw new AppError('You do not have an active lease on this property', 403, 'NOT_YOUR_PROPERTY');
+      }
     }
 
     const request = await MaintenanceRequest.create({
@@ -112,10 +125,15 @@ exports.updateRequestStatus = async (req, res, next) => {
     };
 
     const request = await MaintenanceRequest.findById(req.params.id)
-      .populate('propertyId', 'title')
+      .populate('propertyId', 'title landlordId')
       .populate('tenantId', 'fullName email');
     if (!request) {
       throw new AppError('Maintenance request not found', 404, 'REQUEST_NOT_FOUND');
+    }
+
+    if (req.user.role !== 'admin' &&
+        request.propertyId?.landlordId?.toString() !== req.user._id?.toString()) {
+      throw new AppError('Not authorized to update this request', 403, 'MAINTENANCE_ACCESS_DENIED');
     }
 
     if (!validTransitions[request.status]?.includes(status)) {
@@ -142,6 +160,15 @@ exports.updateRequestStatus = async (req, res, next) => {
       resolutionNotes: resolutionNotes || undefined
     }).catch(err => console.warn('Maintenance update email failed:', err.message));
 
+    if (status === 'in-progress' || status === 'completed') {
+      Notification.create({
+        userId: request.tenantId._id,
+        type: 'maintenance_update',
+        message: `Your maintenance request "${request.subject}" is now ${status}`,
+        link: '/tenant/maintenance.html'
+      }).catch(err => console.warn('Maintenance notification failed:', err.message));
+    }
+
     res.json({
       success: true,
       message: `Request status updated to '${status}'`,
@@ -167,11 +194,16 @@ exports.addResolutionNotes = async (req, res, next) => {
       },
       { new: true, runValidators: true }
     )
-      .populate('propertyId', 'title')
+      .populate('propertyId', 'title landlordId')
       .populate('tenantId', 'fullName email');
 
     if (!request) {
       throw new AppError('Maintenance request not found', 404, 'REQUEST_NOT_FOUND');
+    }
+
+    if (req.user.role !== 'admin' &&
+        request.propertyId?.landlordId?.toString() !== req.user._id?.toString()) {
+      throw new AppError('Not authorized to update this request', 403, 'MAINTENANCE_ACCESS_DENIED');
     }
 
     res.json({

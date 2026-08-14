@@ -23,7 +23,7 @@ router.post(
       .isISO8601().withMessage('Valid due date is required (ISO 8601)'),
     body('paymentMethod')
       .optional()
-      .isIn(['cash', 'bank_transfer', 'online', 'cheque']).withMessage('Invalid payment method'),
+      .isIn(['cash', 'bank_transfer', 'online', 'pos', 'cheque']).withMessage('Invalid payment method'),
     validate
   ],
   paymentController.recordPayment

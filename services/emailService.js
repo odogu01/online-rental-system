@@ -118,6 +118,36 @@ const EMAIL_TEMPLATES = {
     </div>
     <p>Please log in to review and assign the request.</p>
     <a href="${APP_URL}/maintenance" class="button">Review Request</a>
+  `,
+
+  propertyInquiry: (data) => `
+    <h2>New Property Inquiry</h2>
+    <p>Dear <strong>${escapeHtml(data.landlordName)}</strong>,</p>
+    <p>Someone is interested in your property listing and has sent you a message.</p>
+    <div class="detail">
+      <div class="detail-item"><span class="detail-label">Property:</span> ${escapeHtml(data.propertyTitle || 'N/A')}</div>
+      <div class="detail-item"><span class="detail-label">Location:</span> ${escapeHtml(data.propertyLocation || 'N/A')}</div>
+      <div class="detail-item"><span class="detail-label">From:</span> ${escapeHtml(data.name)}</div>
+      <div class="detail-item"><span class="detail-label">Email:</span> ${escapeHtml(data.email)}</div>
+      ${data.phone ? `<div class="detail-item"><span class="detail-label">Phone:</span> ${escapeHtml(data.phone)}</div>` : ''}
+      <div class="detail-item"><span class="detail-label">Message:</span> ${escapeHtml(data.message)}</div>
+    </div>
+    <p>Reply to them directly at <a href="mailto:${escapeHtml(data.email)}" style="color:#2d6a9f;">${escapeHtml(data.email)}</a> or open the message in your dashboard.</p>
+    <a href="${APP_URL}/landlord/inquiries.html?id=${data.inquiryId}" class="button">View Inquiry</a>
+  `,
+
+  inquiryConfirmation: (data) => `
+    <h2>Inquiry Sent</h2>
+    <p>Dear <strong>${escapeHtml(data.name)}</strong>,</p>
+    <p>Thank you for your interest in <strong>${escapeHtml(data.propertyTitle || 'this property')}</strong>.</p>
+    <p>Your inquiry has been sent to the landlord. They will contact you shortly at <strong>${escapeHtml(data.email)}</strong>${data.phone ? ' or <strong>' + escapeHtml(data.phone) + '</strong>' : ''}.</p>
+    <div class="detail">
+      <div class="detail-item"><span class="detail-label">Property:</span> ${escapeHtml(data.propertyTitle || 'N/A')}</div>
+      <div class="detail-item"><span class="detail-label">Location:</span> ${escapeHtml(data.propertyLocation || 'N/A')}</div>
+      <div class="detail-item"><span class="detail-label">Your message:</span> ${escapeHtml(data.message)}</div>
+    </div>
+    <p style="color: #666; font-size: 13px;">You can also keep browsing available properties in the meantime.</p>
+    <a href="${APP_URL}/properties.html" class="button">Browse Properties</a>
   `
 };
 
@@ -314,11 +344,49 @@ const sendMaintenanceNotification = async (landlordEmail, requestDetails) => {
   });
 };
 
+const sendPropertyInquiryToLandlord = async (landlord, property, inquiry) => {
+  const landlordEmail = landlord.email || (landlord._id && landlord.email);
+  if (!landlordEmail) {
+    console.warn('Email service: landlord has no email address — inquiry email skipped.');
+    return { failed: true };
+  }
+  return sendEmail({
+    to: landlordEmail,
+    subject: `New Inquiry: ${property.title}`,
+    html: EMAIL_TEMPLATES.base(EMAIL_TEMPLATES.propertyInquiry({
+      landlordName: landlord.fullName || 'there',
+      propertyTitle: property.title,
+      propertyLocation: property.location,
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone,
+      message: inquiry.message,
+      inquiryId: inquiry._id
+    }))
+  });
+};
+
+const sendInquiryConfirmation = async (userEmail, userName, property, message) => {
+  return sendEmail({
+    to: userEmail,
+    subject: `Inquiry Sent: ${property.title}`,
+    html: EMAIL_TEMPLATES.base(EMAIL_TEMPLATES.inquiryConfirmation({
+      name: userName,
+      propertyTitle: property.title,
+      propertyLocation: property.location,
+      email: userEmail,
+      message: message || 'I am interested in this property.'
+    }))
+  });
+};
+
 module.exports = {
   sendEmail,
   sendRentReminder,
   sendPaymentConfirmation,
   sendMaintenanceUpdate,
   sendLeaseExpiryWarning,
-  sendMaintenanceNotification
+  sendMaintenanceNotification,
+  sendPropertyInquiryToLandlord,
+  sendInquiryConfirmation
 };

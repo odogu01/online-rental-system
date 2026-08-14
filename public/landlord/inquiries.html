@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquiries - Rental System</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html" class="active"><i class="fas fa-envelope"></i>Inquiries</a>
+      <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
+      <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
+      <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
+    </nav>
+  </div>
+  <div class="main-content">
+    <header class="main-header">
+      <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+      <div><h2 class="text-lg font-semibold">Property Inquiries</h2><p class="text-sm text-gray-500">Messages from people interested in your properties</p></div>
+    </header>
+    <div class="content-area">
+      <!-- Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="stat-card"><p class="text-sm text-gray-500">Total Inquiries</p><p class="text-2xl font-bold" id="statTotal">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Unread</p><p class="text-2xl font-bold text-yellow-600" id="statUnread">0</p></div>
+        <div class="stat-card"><p class="text-sm text-gray-500">Read</p><p class="text-2xl font-bold text-green-600" id="statRead">0</p></div>
+      </div>
+
+      <!-- Filter -->
+      <div class="filter-bar">
+        <div class="flex flex-wrap gap-3 items-center">
+          <select id="statusFilter" class="input w-40" onchange="loadInquiries()"><option value="">All Status</option><option value="unread">Unread</option><option value="read">Read</option></select>
+          <select id="propertyFilter" class="input w-56" onchange="loadInquiries()"><option value="">All Properties</option></select>
+          <button onclick="loadInquiries()" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i>Filter</button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table class="table">
+          <thead><tr><th>Property</th><th>Sender</th><th>Phone</th><th>Message</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="inquiriesContainer"><tr><td colspan="7" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inquiry Detail Modal -->
+  <div id="inquiryModal" class="modal hidden"><div class="modal-content p-6" style="max-width:600px">
+    <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Inquiry Details</h3><button onclick="closeModal('inquiryModal')" class="text-gray-400 hover:text-gray-700">&times;</button></div>
+    <div id="inquiryDetailContent"><p class="text-gray-400">Loading...</p></div>
+  </div></div>
+
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      protectPage('landlord');
+      loadPropertyOptions();
+      loadInquiries();
+      // Auto-open an inquiry from a notification link (?id=...)
+      const params = new URLSearchParams(window.location.search);
+      const inquiryId = params.get('id');
+      if (inquiryId) viewInquiry(inquiryId);
+    });
+
+    async function loadPropertyOptions() {
+      try {
+        const result = await apiGet('/properties');
+        const props = result.data?.properties || [];
+        const select = document.getElementById('propertyFilter');
+        select.innerHTML = '<option value="">All Properties</option>' + props.map(p =>
+          `<option value="${escapeHtml(p._id)}">${escapeHtml(p.title)}</option>`
+        ).join('');
+      } catch(e) {}
+    }
+
+    async function loadInquiries() {
+      const tbody = document.getElementById('inquiriesContainer');
+      try {
+        const params = {};
+        const s = document.getElementById('statusFilter').value; if (s) params.status = s;
+        const p = document.getElementById('propertyFilter').value; if (p) params.propertyId = p;
+        const result = await apiGet('/inquiries', params);
+        const data = result.data || {};
+        const inquiries = data.inquiries || [];
+        document.getElementById('statTotal').textContent = data.total || 0;
+        document.getElementById('statUnread').textContent = data.unreadCount || 0;
+        document.getElementById('statRead').textContent = ((data.total || 0) - (data.unreadCount || 0));
+
+        if (inquiries.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No inquiries found</td></tr>'; return; }
+        tbody.innerHTML = inquiries.map(q => `
+          <tr class="hover:bg-gray-50 ${q.isRead ? '' : 'bg-blue-50'}">
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">${escapeHtml(q.propertyId?.title || 'N/A')}</td>
+            <td class="px-4 py-3 text-sm"><p class="font-medium text-gray-900">${escapeHtml(q.name || 'N/A')}</p><p class="text-xs text-gray-400">${escapeHtml(q.email || '')}</p></td>
+            <td class="px-4 py-3 text-sm text-gray-500">${escapeHtml(q.phone || '-')}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">${escapeHtml(truncate(q.message, 60))}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">${escapeHtml(formatDate(q.createdAt))}</td>
+            <td class="px-4 py-3 text-sm">${q.isRead ? '<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Read</span>' : '<span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Unread</span>'}</td>
+            <td class="px-4 py-3 text-sm">
+              <button onclick="viewInquiry('${escapeHtml(q._id)}')" class="text-blue-600 hover:text-blue-800" title="View Inquiry"><i class="fas fa-eye"></i></button>
+            </td>
+          </tr>`).join('');
+      } catch(e) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-500">${escapeHtml(e.message || 'Failed to load inquiries')}</td></tr>`; }
+    }
+
+    async function viewInquiry(id) {
+      openModal('inquiryModal');
+      const container = document.getElementById('inquiryDetailContent');
+      container.innerHTML = '<p class="text-gray-400">Loading...</p>';
+      try {
+        const result = await apiGet(`/inquiries/${id}`);
+        const q = result.data?.inquiry;
+        if (!q) throw new Error('Inquiry not found');
+        container.innerHTML = `
+          <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div><p class="text-gray-500">Property</p><p class="font-medium">${escapeHtml(q.propertyId?.title || 'N/A')}</p></div>
+            <div><p class="text-gray-500">Location</p><p class="font-medium">${escapeHtml(q.propertyId?.location || 'N/A')}</p></div>
+            <div><p class="text-gray-500">Name</p><p class="font-medium">${escapeHtml(q.name || 'N/A')}</p></div>
+            <div><p class="text-gray-500">Phone</p><p class="font-medium">${escapeHtml(q.phone || 'N/A')}</p></div>
+            <div class="col-span-2"><p class="text-gray-500">Email</p><p class="font-medium">${escapeHtml(q.email || 'N/A')}</p></div>
+            <div class="col-span-2"><p class="text-gray-500">Received</p><p>${escapeHtml(formatDate(q.createdAt))}</p></div>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            <p class="text-gray-500 text-xs mb-1">Message</p>
+            <p class="text-sm whitespace-pre-wrap">${escapeHtml(q.message || '')}</p>
+          </div>
+          <div class="flex gap-2">
+            <a href="mailto:${escapeHtml(q.email)}" class="btn btn-primary btn-sm"><i class="fas fa-reply mr-1"></i>Reply via Email</a>
+          </div>`;
+        // Mark as read
+        if (!q.isRead) {
+          try { await apiPut(`/inquiries/${id}/read`); loadInquiries(); } catch(e) {}
+        }
+      } catch(e) { container.innerHTML = `<p class="text-red-500">${escapeHtml(e.message || 'Failed to load inquiry')}</p>`; }
+    }
+  </script>
+</body>
+</html>

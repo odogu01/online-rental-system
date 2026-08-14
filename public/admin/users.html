@@ -41,12 +41,12 @@
   </div>
 
   <!-- User Detail Modal -->
-  <div id="userModal" class="modal"><div class="modal-content p-6" style="max-width:600px">
+  <div id="userModal" class="modal hidden"><div class="modal-content p-6" style="max-width:600px">
     <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">User Details</h3><button onclick="closeModal('userModal')" class="text-gray-400 hover:text-gray-700 text-2xl">&times;</button></div>
     <div id="userDetailContent"><p class="text-gray-400">Loading...</p></div>
   </div></div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/ui.js"></script><script src="/js/dashboard.js"></script>
   <script>
     let searchTimeout;
     function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadUsers, 400); }
@@ -65,7 +65,7 @@
       } catch(e) { /* stats are non-critical */ }
     }
 
-    async function loadUsers() {
+async function loadUsers() {
       const container = document.getElementById('usersContainer');
       try {
         const params = {};
@@ -77,6 +77,7 @@
         const data = result.data;
         const users = data?.users || [];
         const pagination = data?.pagination || {};
+        const currentUserId = getUser()?._id;
 
         if (users.length === 0) {
           container.innerHTML = '<p class="text-center text-gray-400 py-8">No users found</p>';
@@ -88,30 +89,35 @@
             <table class="table"><thead><tr>
               <th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th>
             </tr></thead><tbody>
-            ${users.map(u => `<tr>
-              <td class="font-medium">${u.fullName}</td>
-              <td class="text-sm">${u.email}</td>
-              <td>${getRoleBadge(u.role)}</td>
-              <td class="text-sm">${u.phoneNumber || '-'}</td>
-              <td>${u.isActive !== false ? '<span class="status-badge status-paid">Active</span>' : '<span class="status-badge status-overdue">Inactive</span>'}</td>
-              <td class="text-sm text-gray-500">${formatDate(u.createdAt)}</td>
-              <td>
-                <button onclick="viewUser('${u._id}')" class="text-blue-600 hover:underline text-sm mr-2"><i class="fas fa-eye"></i></button>
-                <button onclick="toggleStatus('${u._id}', ${u.isActive !== false})" class="text-sm ${u.isActive !== false ? 'text-red-600' : 'text-green-600'} hover:underline mr-2">
-                  <i class="fas ${u.isActive !== false ? 'fa-ban' : 'fa-check'}"></i>
-                </button>
-                <button onclick="deleteUser('${u._id}')" class="text-red-600 hover:underline text-sm"><i class="fas fa-trash"></i></button>
-              </td>
-            </tr>`).join('')}
+            ${users.map(u => {
+              const isSelf = currentUserId && u._id === currentUserId;
+              const active = u.isActive !== false;
+              return `<tr>
+                <td class="font-medium">${escapeHtml(u.fullName)}</td>
+                <td class="text-sm">${escapeHtml(u.email)}</td>
+                <td>${getRoleBadge(u.role)}</td>
+                <td class="text-sm">${escapeHtml(u.phoneNumber || '-')}</td>
+                <td>${active ? '<span class="status-badge status-paid">Active</span>' : '<span class="status-badge status-overdue">Inactive</span>'}</td>
+                <td class="text-sm text-gray-500">${formatDate(u.createdAt)}</td>
+                <td>
+                  <button onclick="viewUser('${escapeHtml(u._id)}')" class="text-blue-600 hover:underline text-sm mr-2"><i class="fas fa-eye"></i></button>
+                  ${isSelf ? '' : `
+                  <button onclick="toggleStatus('${escapeHtml(u._id)}', ${active})" class="text-sm ${active ? 'text-red-600' : 'text-green-600'} hover:underline mr-2">
+                    <i class="fas ${active ? 'fa-ban' : 'fa-check'}"></i>
+                  </button>
+                  <button onclick="deleteUser('${escapeHtml(u._id)}')" class="text-red-600 hover:underline text-sm"><i class="fas fa-trash"></i></button>`}
+                </td>
+              </tr>`;
+            }).join('')}
             </tbody></table>
-            ${pagination.pages > 1 ? `<div class="p-4 text-sm text-gray-500 text-center">Page ${pagination.page} of ${pagination.pages} (${pagination.total} total users)</div>` : ''}
+            ${pagination.pages > 1 ? `<div class="p-4 text-sm text-gray-500 text-center">Page ${escapeHtml(pagination.page)} of ${escapeHtml(pagination.pages)} (${escapeHtml(pagination.total)} total users)</div>` : ''}
           </div>`;
-      } catch(e) { container.innerHTML = `<p class="text-red-500 text-center py-8">${e.message || 'Failed to load users'}</p>`; }
+      } catch(e) { container.innerHTML = `<p class="text-red-500 text-center py-8">${escapeHtml(e.message || 'Failed to load users')}</p>`; }
     }
 
     function getRoleBadge(role) {
       const colors = { admin: 'bg-purple-100 text-purple-700', landlord: 'bg-blue-100 text-blue-700', tenant: 'bg-green-100 text-green-700' };
-      return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${colors[role] || 'bg-gray-100'}">${role}</span>`;
+      return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${colors[role] || 'bg-gray-100'}">${escapeHtml(role)}</span>`;
     }
 
     async function viewUser(id) {
@@ -120,38 +126,43 @@
       try {
         const result = await apiGet(`/admin/users/${id}`);
         const { user, stats } = result.data;
+        const initials = (user.fullName || '').split(' ').map(w => w ? w[0] : '').join('').toUpperCase().slice(0, 2);
         document.getElementById('userDetailContent').innerHTML = `
           <div class="space-y-3 text-sm">
-            <div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">${(user.fullName || '').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
-            <div><p class="font-semibold text-base">${user.fullName}</p><p class="text-gray-500">${user.email}</p></div></div>
+            <div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-lg">${escapeHtml(initials)}</div>
+            <div><p class="font-semibold text-base">${escapeHtml(user.fullName)}</p><p class="text-gray-500">${escapeHtml(user.email)}</p></div></div>
             <div class="grid grid-cols-2 gap-3">
               <div><p class="text-gray-500">Role</p>${getRoleBadge(user.role)}</div>
               <div><p class="text-gray-500">Status</p>${user.isActive !== false ? '<span class="text-green-600 font-medium">Active</span>' : '<span class="text-red-600 font-medium">Inactive</span>'}</div>
-              <div><p class="text-gray-500">Phone</p><p>${user.phoneNumber || 'N/A'}</p></div>
+              <div><p class="text-gray-500">Phone</p><p>${escapeHtml(user.phoneNumber || 'N/A')}</p></div>
               <div><p class="text-gray-500">Joined</p><p>${formatDate(user.createdAt)}</p></div>
             </div>
             ${stats ? `<div class="mt-4 pt-4 border-t"><h4 class="font-semibold text-sm mb-2">Activity Stats</h4><div class="grid grid-cols-3 gap-2 text-center">
-              ${Object.entries(stats).map(([k,v]) => `<div class="bg-gray-50 rounded p-2"><p class="text-lg font-bold text-blue-600">${v}</p><p class="text-xs text-gray-500 capitalize">${k.replace(/([A-Z])/g,' $1')}</p></div>`).join('')}
+              ${Object.entries(stats).map(([k,v]) => `<div class="bg-gray-50 rounded p-2"><p class="text-lg font-bold text-blue-600">${escapeHtml(v)}</p><p class="text-xs text-gray-500 capitalize">${escapeHtml(k.replace(/([A-Z])/g,' $1'))}</p></div>`).join('')}
             </div></div>` : ''}
             <div class="flex gap-2 mt-4 pt-4 border-t">
               <select id="changeRoleSelect" class="input text-sm"><option value="landlord">Landlord</option><option value="tenant">Tenant</option><option value="admin">Admin</option></select>
-              <button onclick="changeRole('${user._id}')" class="btn btn-primary btn-sm">Change Role</button>
+              <button onclick="changeRole('${escapeHtml(user._id)}')" class="btn btn-primary btn-sm">Change Role</button>
             </div>
           </div>`;
+        const roleSelect = document.getElementById('changeRoleSelect');
+        if (roleSelect && user.role) roleSelect.value = user.role;
       } catch(e) { document.getElementById('userDetailContent').innerHTML = '<p class="text-red-500">Failed to load details</p>'; }
     }
 
     async function changeRole(id) {
+      if (id === getUser()?._id) { showToast('You cannot change your own role', 'warning'); return; }
       const role = document.getElementById('changeRoleSelect').value;
       try {
         await apiPut(`/admin/users/${id}/role`, { role });
-        showToast(`Role changed to ${role}`, 'success');
+        showToast(`Role changed to ${escapeHtml(role)}`, 'success');
         closeModal('userModal');
         loadUsers();
       } catch(e) { showToast(e.message || 'Failed', 'error'); }
     }
 
     async function toggleStatus(id, currentlyActive) {
+      if (id === getUser()?._id) { showToast('You cannot modify your own account', 'warning'); return; }
       if (!confirm(`${currentlyActive ? 'Deactivate' : 'Activate'} this user?`)) return;
       try {
         await apiPut(`/admin/users/${id}/status`, { isActive: !currentlyActive });
@@ -161,6 +172,7 @@
     }
 
     async function deleteUser(id) {
+      if (id === getUser()?._id) { showToast('You cannot delete your own account', 'warning'); return; }
       if (!confirm('Permanently delete this user? This cannot be undone.')) return;
       try {
         await apiDelete(`/admin/users/${id}`);

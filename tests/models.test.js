@@ -99,6 +99,33 @@ describe('Model Schemas', () => {
     expect(statusPath.enumValues).toContain('paid');
     expect(statusPath.enumValues).toContain('pending');
     expect(statusPath.enumValues).toContain('overdue');
+
+    // POS added as a valid payment method
+    const methodPath = Payment.schema.path('paymentMethod');
+    expect(methodPath.enumValues).toContain('pos');
+    expect(methodPath.enumValues).toContain('cash');
+    expect(methodPath.enumValues).toContain('bank_transfer');
+  });
+
+  test('PropertyInquiry model has correct fields', () => {
+    const PropertyInquiry = require('../models/PropertyInquiry');
+    const paths = Object.keys(PropertyInquiry.schema.paths);
+    expect(paths).toContain('propertyId');
+    expect(paths).toContain('landlordId');
+    expect(paths).toContain('userId');
+    expect(paths).toContain('name');
+    expect(paths).toContain('email');
+    expect(paths).toContain('phone');
+    expect(paths).toContain('message');
+    expect(paths).toContain('isRead');
+    expect(paths).toContain('readAt');
+
+    // Name and message are required
+    expect(PropertyInquiry.schema.path('name').options.required).toBeTruthy();
+    expect(PropertyInquiry.schema.path('email').options.required).toBeTruthy();
+    expect(PropertyInquiry.schema.path('message').options.required).toBeTruthy();
+    // isRead defaults to false
+    expect(PropertyInquiry.schema.path('isRead').options.default).toBe(false);
   });
 
   test('MaintenanceRequest has correct status and urgency enums', () => {
@@ -136,6 +163,20 @@ describe('Model Schemas', () => {
     expect(hasUserIdIndex).toBe(true);
     // The TTL index may be handled by MongoDB at the field level via expires option
     expect(createdAtPath.options.expires).toBe(7776000); // 90 days
+  });
+
+  test('Notification model supports property_inquiry type and link field', () => {
+    const Notification = require('../models/Notification');
+    const paths = Object.keys(Notification.schema.paths);
+    expect(paths).toContain('userId');
+    expect(paths).toContain('type');
+    expect(paths).toContain('message');
+    expect(paths).toContain('link');
+    expect(paths).toContain('isRead');
+
+    const typePath = Notification.schema.path('type');
+    expect(typePath.enumValues).toContain('property_inquiry');
+    expect(Notification.schema.path('isRead').options.default).toBe(false);
   });
 });
 

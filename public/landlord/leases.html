@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html" class="active"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html" class="active"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -37,13 +37,13 @@
     </div>
   </div>
 
-  <!-- Lease Detail Modal -->
-  <div id="leaseModal" class="modal"><div class="modal-content p-6" style="max-width:600px">
+<!-- Lease Detail Modal -->
+  <div id="leaseModal" class="modal hidden"><div class="modal-content p-6" style="max-width:600px">
     <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Lease Details</h3><button onclick="closeModal('leaseModal')" class="text-gray-400 hover:text-gray-700">&times;</button></div>
     <div id="leaseDetailContent"><p class="text-gray-400">Loading...</p></div>
   </div></div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadLeases(); });
 
@@ -59,9 +59,9 @@
         document.getElementById('loadingSpinner').classList.add('hidden');
         if (leases.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-gray-400 py-8">No leases found</td></tr>'; return; }
         tbody.innerHTML = leases.map(l => `<tr>
-          <td class="font-medium">${l.propertyId?.title || 'N/A'}</td>
-          <td>${l.tenantId?.fullName || 'N/A'}</td>
-          <td class="text-sm">${formatDate(l.startDate)} - ${formatDate(l.endDate)}</td>
+          <td class="font-medium">${escapeHtml(l.propertyId?.title || 'N/A')}</td>
+          <td>${escapeHtml(l.tenantId?.fullName || 'N/A')}</td>
+          <td class="text-sm">${escapeHtml(formatDate(l.startDate))} - ${escapeHtml(formatDate(l.endDate))}</td>
           <td>NGN ${(l.monthlyRent || 0).toLocaleString()}</td>
           <td>${getStatusBadge(l.status)}</td>
           <td><button onclick="viewLease('${l._id}')" class="text-blue-600 hover:underline text-sm mr-2"><i class="fas fa-eye"></i></button></td>
@@ -74,17 +74,19 @@
       document.getElementById('leaseDetailContent').innerHTML = '<p class="text-gray-400">Loading...</p>';
       try {
         const result = await apiGet(`/leases/${id}`);
-        const l = result.data;
+        const l = result.data?.lease;
+        if (!l) throw new Error('Lease not found');
+        const payments = result.data?.payments || [];
         document.getElementById('leaseDetailContent').innerHTML = `
-          <div class="grid grid-cols-2 gap-4 text-sm"><div><p class="text-gray-500">Property</p><p class="font-medium">${l.propertyId?.title || 'N/A'}</p></div>
-          <div><p class="text-gray-500">Tenant</p><p class="font-medium">${l.tenantId?.fullName || 'N/A'}</p></div>
-          <div><p class="text-gray-500">Start Date</p><p>${formatDate(l.startDate)}</p></div><div><p class="text-gray-500">End Date</p><p>${formatDate(l.endDate)}</p></div>
+          <div class="grid grid-cols-2 gap-4 text-sm"><div><p class="text-gray-500">Property</p><p class="font-medium">${escapeHtml(l.propertyId?.title || 'N/A')}</p></div>
+          <div><p class="text-gray-500">Tenant</p><p class="font-medium">${escapeHtml(l.tenantId?.fullName || 'N/A')}</p></div>
+          <div><p class="text-gray-500">Start Date</p><p>${escapeHtml(formatDate(l.startDate))}</p></div><div><p class="text-gray-500">End Date</p><p>${escapeHtml(formatDate(l.endDate))}</p></div>
           <div><p class="text-gray-500">Monthly Rent</p><p class="font-semibold">NGN ${(l.monthlyRent || 0).toLocaleString()}</p></div>
           <div><p class="text-gray-500">Security Deposit</p><p>NGN ${(l.securityDeposit || 0).toLocaleString()}</p></div>
           <div><p class="text-gray-500">Status</p>${getStatusBadge(l.status)}</div></div>
           <div class="mt-4 pt-4 border-t"><h4 class="font-medium text-sm mb-2">Payment History</h4>
-          ${(l.payments || []).length === 0 ? '<p class="text-gray-400 text-sm">No payments yet</p>' :
-          '<div class="space-y-2 max-h-40 overflow-y-auto">' + l.payments.map(p => `<div class="flex justify-between items-center text-sm py-1 border-b border-gray-50"><span>${formatDate(p.paymentDate)}</span><span class="font-medium">NGN ${(p.amount || 0).toLocaleString()}</span>${getStatusBadge(p.status)}</div>`).join('') + '</div>'}</div>
+          ${payments.length === 0 ? '<p class="text-gray-400 text-sm">No payments yet</p>' :
+          '<div class="space-y-2 max-h-40 overflow-y-auto">' + payments.map(p => `<div class="flex justify-between items-center text-sm py-1 border-b border-gray-50"><span>${escapeHtml(formatDate(p.paymentDate))}</span><span class="font-medium">NGN ${(p.amount || 0).toLocaleString()}</span>${getStatusBadge(p.status)}</div>`).join('') + '</div>'}</div>
           <div class="mt-4 flex gap-2">${l.status === 'active' ? `<button onclick="terminateLease('${l._id}')" class="btn btn-danger btn-sm">Terminate Lease</button>` : ''}</div>`;
       } catch(e) { document.getElementById('leaseDetailContent').innerHTML = '<p class="text-red-500">Failed to load details</p>'; }
     }

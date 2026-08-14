@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html" class="active"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -35,14 +35,19 @@
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
         <div class="p-4 border-b flex flex-wrap gap-3">
           <select id="statusFilter" class="input" onchange="loadPaymentsList()"><option value="">All Status</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="overdue">Overdue</option></select>
-          <select id="paymentMethodFilter" class="input" onchange="loadPaymentsList()"><option value="">All Methods</option><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="cheque">Cheque</option><option value="pos">POS</option></select>
+<select id="paymentMethodFilter" class="input" onchange="loadPaymentsList()"><option value="">All Methods</option><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="online">Online</option><option value="cheque">Cheque</option><option value="pos">POS</option></select>
         </div>
-        <div id="paymentsContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading payments...</p></div>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead><tr><th>Property</th><th>Amount</th><th>Method</th><th>Date</th><th>Due</th><th>Status</th><th>Receipt</th></tr></thead>
+            <tbody id="paymentsContainer"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/payment.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/payment.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadPaymentsList(); });
 

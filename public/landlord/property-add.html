@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html" class="active"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html" class="active"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -26,15 +26,16 @@
       <div class="bg-white rounded-xl shadow-sm p-6 max-w-3xl">
         <form id="propertyForm" onsubmit="return handleSubmit(event)">
           <div class="grid md:grid-cols-2 gap-4 mb-4">
-            <div class="md:col-span-2"><label class="label">Property Title</label><input type="text" id="title" class="input" required></div>
-            <div><label class="label">Location / Address</label><input type="text" id="location" class="input" required></div>
-            <div><label class="label">Rent Amount (NGN)</label><input type="number" id="rentAmount" class="input" min="0" required></div>
-            <div><label class="label">Bedrooms</label><input type="number" id="bedrooms" class="input" min="0" required></div>
-            <div><label class="label">Bathrooms</label><input type="number" id="bathrooms" class="input" min="0" required></div>
-            <div><label class="label">Status</label><select id="status" class="input"><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select></div>
+<div class="md:col-span-2"><label class="label">Property Title</label><input type="text" id="title" name="title" class="input" required></div>
+            <div><label class="label">Location / Address</label><input type="text" id="location" name="location" class="input" required></div>
+            <div><label class="label">Rent Amount (NGN)</label><input type="number" id="rentAmount" name="rentAmount" class="input" min="0" required></div>
+            <div><label class="label">Bedrooms</label><input type="number" id="bedrooms" name="bedrooms" class="input" min="0" required></div>
+            <div><label class="label">Bathrooms</label><input type="number" id="bathrooms" name="bathrooms" class="input" min="0" required></div>
+            <div><label class="label">Status</label><select id="status" name="status" class="input"><option value="vacant">Vacant</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option></select></div>
           </div>
-          <div class="mb-4"><label class="label">Amenities</label><textarea id="amenities" class="input" rows="2" placeholder="e.g. WiFi, Parking, Generator, Security"></textarea></div>
-          <div class="mb-4"><label class="label">Description</label><textarea id="description" class="input" rows="3" required></textarea></div>
+          <div class="mb-4"><label class="label">Amenities</label><textarea id="amenities" name="amenities" class="input" rows="2" placeholder="e.g. WiFi, Parking, Generator, Security"></textarea></div>
+          <div class="mb-4"><label class="label">Description</label><textarea id="description" name="description" class="input" rows="3" required></textarea></div>
+          <div class="mb-4"><label class="label">Property Image</label><input type="file" id="propertyImage" accept="image/*" class="input"></div>
           <div id="formMessage" class="hidden mb-4"></div>
           <div class="flex gap-3"><button type="submit" id="submitBtn" class="btn btn-primary">Add Property</button><a href="/landlord/properties.html" class="btn btn-secondary">Cancel</a></div>
         </form>
@@ -42,18 +43,20 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/validation.js"></script><script src="/js/dashboard.js"></script><script src="/js/property.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/validation.js"></script><script src="/js/dashboard.js"></script><script src="/js/property.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); });
 
     async function handleSubmit(e) {
-      e.preventDefault(); const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
       try {
-        const data = { title: document.getElementById('title').value, location: document.getElementById('location').value, rentAmount: Number(document.getElementById('rentAmount').value), bedrooms: Number(document.getElementById('bedrooms').value), bathrooms: Number(document.getElementById('bathrooms').value), amenities: document.getElementById('amenities').value, description: document.getElementById('description').value, status: document.getElementById('status').value };
-        await saveProperty(data);
-        showToast('Property added successfully!', 'success');
-        setTimeout(() => window.location.href = '/landlord/properties.html', 1500);
-      } catch(e) { showFormError('formMessage', e); btn.disabled = false; btn.innerHTML = 'Add Property'; }
+        await saveProperty(e, null);
+        // saveProperty shows a toast and redirects on success
+      } catch(err) {
+        showFormError('formMessage', err);
+        btn.disabled = false; btn.innerHTML = 'Add Property';
+      }
     }
   </script>
 </body>

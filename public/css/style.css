@@ -1116,3 +1116,113 @@ textarea.form-input { min-height: 100px; resize: vertical; }
   .grid-cols-3 { grid-template-columns: 1fr; }
   .data-table-wrapper { overflow-x: auto; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SHARED COMPONENT FIXES (added — used by dashboard pages)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Body scroll lock while a modal is open */
+body.modal-open { overflow: hidden; }
+
+/* Pages use class="modal" as the overlay (was unstyled before) */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+  padding: 16px;
+}
+.modal.hidden { display: none !important; }
+
+/* Generic .table used by dashboard pages (was unstyled before) */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #fff;
+}
+.table th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray-500);
+  border-bottom: 2px solid var(--gray-100);
+  background: var(--gray-50);
+  white-space: nowrap;
+}
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+.table tbody tr { transition: background 0.15s; }
+.table tbody tr:hover { background: var(--gray-50); }
+.table tbody tr:last-child td { border-bottom: none; }
+
+/* Generic .input used by dashboard pages (was unstyled before) */
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.input.error { border-color: var(--danger); }
+
+/* Generic .label used by dashboard pages (was unstyled before) */
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+
+/* Error message helper used by showFormError() */
+.error-message {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 6px;
+}
+
+/* Inquiries / notifications small helpers */
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  background: #fff;
+  margin-bottom: 10px;
+  transition: background 0.15s;
+}
+.notification-item.unread {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.notification-item i { font-size: 18px; margin-top: 2px; }
+.notification-item .notification-meta { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+.notification-item a { font-weight: 600; color: var(--accent); }
+.notification-item a:hover { text-decoration: underline; }

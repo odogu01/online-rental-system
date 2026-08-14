@@ -90,56 +90,23 @@
     </div>
   </footer>
 
-  <script src="/js/api.js"></script>
+<script src="/js/api.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/dashboard.js"></script>
+  <script src="/js/property.js"></script>
+  <script src="/js/ui.js"></script>
   <script>
-    async function loadProperties() {
-      const grid = document.getElementById('propertiesGrid');
-      loadingState(grid);
-
-      try {
-        const result = await apiGet('/properties', {
-          status: document.getElementById('filterStatus').value,
-          minRent: document.getElementById('filterMinRent').value,
-          maxRent: document.getElementById('filterMaxRent').value,
-          bedrooms: document.getElementById('filterBedrooms').value
-        });
-
-        const properties = result.data?.properties || [];
-
-        if (properties.length === 0) {
-          emptyState(grid, 'No properties match your criteria', 'fa-search');
-          return;
-        }
-
-        grid.innerHTML = properties.map(p => `
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
-            <div class="h-44 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-              <i class="fas fa-building text-5xl text-white opacity-60"></i>
-            </div>
-            <div class="p-5">
-              <div class="flex justify-between items-start mb-2">
-                <h3 class="font-semibold text-gray-900 text-lg">${p.title}</h3>
-                ${getStatusBadge(p.status)}
-              </div>
-              <p class="text-sm text-gray-500 mb-2"><i class="fas fa-map-marker-alt mr-1 text-blue-500"></i>${p.location || 'N/A'}</p>
-              <div class="flex gap-4 text-sm text-gray-500 mb-3">
-                <span><i class="fas fa-bed mr-1"></i>${p.bedrooms} bed</span>
-                <span><i class="fas fa-bath mr-1"></i>${p.bathrooms} bath</span>
-              </div>
-              <p class="text-xl font-bold text-blue-600">NGN ${(p.rentAmount || 0).toLocaleString()}<span class="text-sm font-normal text-gray-400">/month</span></p>
-              ${p.amenities ? `<p class="text-xs text-gray-400 mt-2"><i class="fas fa-tag mr-1"></i>${truncate(p.amenities, 50)}</p>` : ''}
-            </div>
-          </div>
-        `).join('');
-      } catch (error) {
-        emptyState(grid, 'Error loading properties', 'fa-exclamation-circle');
-      }
+    function getFilters() {
+      return {
+        status: document.getElementById('filterStatus').value,
+        minRent: document.getElementById('filterMinRent').value,
+        maxRent: document.getElementById('filterMaxRent').value,
+        bedrooms: document.getElementById('filterBedrooms').value
+      };
     }
 
     function applyFilters() {
-      loadProperties();
+      loadPublicPropertiesGrid('propertiesGrid', getFilters());
     }
 
     function resetFilters() {
@@ -147,23 +114,13 @@
       document.getElementById('filterMinRent').value = '';
       document.getElementById('filterMaxRent').value = '';
       document.getElementById('filterBedrooms').value = '';
-      loadProperties();
+      applyFilters();
     }
 
-    document.addEventListener('DOMContentLoaded', loadProperties);
-
-    function showToast(message, type) {
-      const container = document.querySelector('.toast-container') || (() => {
-        const c = document.createElement('div'); c.className = 'toast-container'; document.body.appendChild(c); return c;
-      })();
-      const toast = document.createElement('div');
-      toast.className = `toast toast-${type}`;
-      const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
-      toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span><button class="toast-close">&times;</button>`;
-      toast.querySelector('.toast-close').onclick = () => toast.remove();
-      container.appendChild(toast);
-      setTimeout(() => { toast.style.animation = 'slideOut 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 4000);
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      if (isAuthenticated()) initAuthUI();
+      applyFilters();
+    });
   </script>
 </body>
 </html>

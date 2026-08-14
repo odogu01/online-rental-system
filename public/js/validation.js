@@ -177,3 +177,16 @@ function initFormValidation(formId, validationMap) {
 
   return form;
 }
+
+// CommonJS export so the test suite can require() this file directly.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ValidationRules,
+    validateField,
+    validateForm,
+    showFieldError,
+    clearFieldError,
+    addRealTimeValidation,
+    initFormValidation
+  };
+}

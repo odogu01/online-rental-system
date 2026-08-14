@@ -9,7 +9,7 @@ const path = require('path');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 describe('JS Modules', () => {
-  const modules = ['api.js', 'auth.js', 'validation.js', 'dashboard.js', 'property.js', 'payment.js', 'maintenance.js', 'report.js'];
+  const modules = ['api.js', 'auth.js', 'validation.js', 'dashboard.js', 'property.js', 'payment.js', 'maintenance.js', 'report.js', 'ui.js'];
 
   modules.forEach(mod => {
     test(`${mod} exists and has valid JavaScript syntax`, () => {
@@ -114,6 +114,7 @@ describe('Dashboard Pages', () => {
     'landlord/property-edit.html', 'landlord/leases.html', 'landlord/lease-create.html',
     'landlord/tenants.html', 'landlord/payments.html', 'landlord/payment-record.html',
     'landlord/maintenance.html', 'landlord/reports.html', 'landlord/profile.html',
+    'landlord/inquiries.html',
     'tenant/dashboard.html', 'tenant/properties.html', 'tenant/my-property.html',
     'tenant/payments.html', 'tenant/maintenance.html', 'tenant/maintenance-create.html',
     'tenant/profile.html',
@@ -121,7 +122,7 @@ describe('Dashboard Pages', () => {
     'admin/leases.html', 'admin/disputes.html', 'admin/reports.html', 'admin/profile.html'
   ];
 
-  test('all 26 dashboard pages exist', () => {
+  test('all 27 dashboard pages exist', () => {
     dashboards.forEach(page => {
       const filePath = path.join(PUBLIC_DIR, page);
       expect(fs.existsSync(filePath)).toBe(true);
@@ -162,7 +163,7 @@ describe('Dashboard Pages', () => {
       const dirPath = dir ? path.join(PUBLIC_DIR, dir) : PUBLIC_DIR;
       fs.readdirSync(dirPath).filter(f => f.endsWith('.html')).forEach(f => files.push(dir ? `${dir}/${f}` : f));
     });
-    expect(files.length).toBe(30);
+    expect(files.length).toBe(31);
     files.forEach(f => {
       const html = fs.readFileSync(path.join(PUBLIC_DIR, f), 'utf8');
       expect(html).toContain('favicon.svg');

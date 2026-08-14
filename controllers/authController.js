@@ -22,6 +22,10 @@ exports.register = async (req, res, next) => {
   try {
     const { fullName, email, password, role, phoneNumber } = req.body;
 
+    if (role && !['tenant', 'landlord'].includes(role)) {
+      throw new AppError('Role must be landlord or tenant', 400, 'INVALID_ROLE');
+    }
+
     const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       throw new AppError('Email already registered', 400, 'EMAIL_EXISTS');

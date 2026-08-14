@@ -48,13 +48,13 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadProfile(); });
     async function loadProfile() {
       try {
-        const result = await apiGet('/auth/profile');
-        const u = result.data;
+const result = await apiGet('/auth/profile');
+        const u = result.data?.user || {};
         document.getElementById('fullName').value = u.fullName || '';
         document.getElementById('email').value = u.email || '';
         document.getElementById('phoneNumber').value = u.phoneNumber || '';

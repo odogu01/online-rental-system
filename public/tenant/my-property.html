@@ -22,7 +22,7 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadMyProperty(); });
 
@@ -30,37 +30,36 @@
       try {
         const result = await apiGet('/leases/active');
         const leases = result.data?.leases || [];
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const myLease = leases.find(l => l.tenantId?._id === user.id);
+        // Endpoint is already tenant-scoped — use the first active lease
+        const myLease = leases[0];
         if (!myLease) {
           document.getElementById('propertyContent').innerHTML = `
             <div class="bg-white rounded-xl shadow-sm p-12 text-center">
               <i class="fas fa-home text-5xl text-gray-300 mb-4"></i>
               <h3 class="text-xl font-semibold text-gray-700 mb-2">No Property Yet</h3>
-              <p class="text-gray-400 mb-4">You don't have an active lease. Browse available properties to get started.</p>
+              <p class="text-gray-400 mb-4">You don't have an active lease yet. Browse available properties to get started.</p>
               <a href="/tenant/properties.html" class="btn btn-primary">Browse Properties</a>
             </div>`;
           return;
         }
+        const prop = myLease.propertyId || {};
+        const propTitle = prop.title || myLease.propertyId || 'N/A';
+        const leaseEnded = myLease.endDate && new Date(myLease.endDate) < new Date();
         document.getElementById('propertyContent').innerHTML = `
           <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="h-40 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center"><i class="fas fa-building text-6xl text-white opacity-30"></i></div>
             <div class="p-6">
-              <div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold">${myLease.propertyId?.title || 'N/A'}</h2><p class="text-gray-500 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${myLease.propertyId?.location || 'N/A'}</p></div>
+              <div class="flex justify-between items-start"><div><h2 class="text-2xl font-bold">${escapeHtml(propTitle)}</h2><p class="text-gray-500 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(prop.location || 'N/A')}</p></div>
               ${getStatusBadge(myLease.status)}</div>
               <div class="grid md:grid-cols-2 gap-4 mt-6">
-                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Bedrooms</p><p class="text-lg font-semibold">${myLease.propertyId?.bedrooms || 'N/A'}</p></div>
-                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Bathrooms</p><p class="text-lg font-semibold">${myLease.propertyId?.bathrooms || 'N/A'}</p></div>
                 <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Monthly Rent</p><p class="text-lg font-semibold text-blue-600">NGN ${(myLease.monthlyRent || 0).toLocaleString()}</p></div>
                 <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Security Deposit</p><p class="text-lg font-semibold">NGN ${(myLease.securityDeposit || 0).toLocaleString()}</p></div>
-                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease Start</p><p class="text-lg font-semibold">${formatDate(myLease.startDate)}</p></div>
-                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease End</p><p class="text-lg font-semibold ${new Date(myLease.endDate) < new Date() ? 'text-red-600' : ''}">${formatDate(myLease.endDate)}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease Start</p><p class="text-lg font-semibold">${escapeHtml(formatDate(myLease.startDate))}</p></div>
+                <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">Lease End</p><p class="text-lg font-semibold ${leaseEnded ? 'text-red-600' : ''}">${escapeHtml(formatDate(myLease.endDate))}</p></div>
               </div>
-              ${myLease.propertyId?.amenities ? `<div class="mt-4"><h4 class="font-semibold mb-2">Amenities</h4><p class="text-gray-600">${myLease.propertyId.amenities}</p></div>` : ''}
-              ${myLease.propertyId?.description ? `<div class="mt-4"><h4 class="font-semibold mb-2">Description</h4><p class="text-gray-600">${myLease.propertyId.description}</p></div>` : ''}
               <div class="flex gap-3 mt-6">
                 <a href="/tenant/payments.html" class="btn btn-primary btn-sm"><i class="fas fa-credit-card mr-1"></i>Make Payment</a>
-                <a href="/tenant/maintenance.html" class="btn btn-warning btn-sm"><i class="fas fa-tools mr-1"></i>Report Issue</a>
+                <a href="/tenant/maintenance-create.html" class="btn btn-warning btn-sm"><i class="fas fa-tools mr-1"></i>Report Issue</a>
               </div>
             </div>
           </div>`;

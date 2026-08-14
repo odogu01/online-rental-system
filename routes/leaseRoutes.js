@@ -36,6 +36,9 @@ router.post(
 // GET /api/leases - List leases
 router.get('/', leaseController.getLeases);
 
+// GET /api/leases/tenants - List tenants on the landlord's properties
+router.get('/tenants', authorize('landlord', 'admin'), leaseController.getTenantsByLandlord);
+
 // GET /api/leases/active - Get all active leases
 router.get('/active', leaseController.getActiveLeases);
 

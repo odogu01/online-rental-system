@@ -9,8 +9,8 @@ const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: {
-      values: ['rent_reminder', 'maintenance_update', 'lease_expiry', 'payment_confirmation'],
-      message: 'Type must be rent_reminder, maintenance_update, lease_expiry, or payment_confirmation'
+      values: ['rent_reminder', 'maintenance_update', 'lease_expiry', 'payment_confirmation', 'property_inquiry'],
+      message: 'Type must be rent_reminder, maintenance_update, lease_expiry, payment_confirmation, or property_inquiry'
     },
     required: [true, 'Notification type is required']
   },
@@ -18,6 +18,10 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Notification message is required'],
     maxlength: [2000, 'Message must not exceed 2000 characters']
+  },
+  link: {
+    type: String,
+    default: ''
   },
   isRead: {
     type: Boolean,

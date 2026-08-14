@@ -24,37 +24,60 @@
         <div class="stat-card"><p class="text-sm text-gray-500">Overdue</p><p class="text-2xl font-bold text-red-600">NGN <span id="overdue">0</span></p></div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <div id="paymentsContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading payments...</p></div>
+      <div class="filter-bar">
+        <div class="flex flex-wrap gap-3 items-center">
+          <select id="filterStatus" class="input w-36">
+            <option value="">All Statuses</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="overdue">Overdue</option>
+          </select>
+          <select id="filterMethod" class="input w-44">
+            <option value="">All Methods</option>
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="online">Online</option>
+            <option value="pos">POS</option>
+            <option value="cheque">Cheque</option>
+          </select>
+          <button onclick="loadMyPayments()" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i>Filter</button>
+        </div>
+      </div>
+
+      <div class="data-table-wrapper bg-white rounded-xl shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr><th>Property</th><th>Amount</th><th>Method</th><th>Date</th><th>Due</th><th>Status</th><th>Receipt</th></tr>
+            </thead>
+            <tbody id="paymentsContainer"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/payment.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script><script src="/js/payment.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('tenant'); loadMyPayments(); });
 
     async function loadMyPayments() {
       try {
         const result = await apiGet('/payments');
-        const data = result.data;
-        const payments = data?.payments || [];
-        const summary = data?.summary || {};
-
-        // Load outstanding balance
-        try {
-          const balResult = await apiGet('/payments/outstanding');
-          const bal = balResult.data;
-          if (bal) {
-            document.getElementById('totalPaid').textContent = (bal.totalPaid || 0).toLocaleString();
-            document.getElementById('outstanding').textContent = (bal.outstandingBalance || 0).toLocaleString();
-          }
-        } catch(e) {}
-
+        const summary = result.data?.summary || {};
+        document.getElementById('totalPaid').textContent = (summary.paid || 0).toLocaleString();
         document.getElementById('overdue').textContent = (summary.overdue || 0).toLocaleString();
 
-        await loadPayments('paymentsContainer');
-      } catch(e) { document.getElementById('paymentsContainer').innerHTML = '<p class="text-red-500 p-4">Failed to load payments</p>'; }
+        try {
+          const balResult = await apiGet('/payments/outstanding');
+          document.getElementById('outstanding').textContent = ((balResult.data?.totalOutstanding) || 0).toLocaleString();
+        } catch(e) {}
+
+        const filters = {};
+        const status = document.getElementById('filterStatus').value; if (status) filters.status = status;
+        const method = document.getElementById('filterMethod').value; if (method) filters.method = method;
+        await loadPayments('paymentsContainer', filters);
+      } catch(e) { document.getElementById('paymentsContainer').innerHTML = '<tr><td colspan="7" class="text-red-500 p-4 text-center">Failed to load payments</td></tr>'; }
     }
   </script>
 </body>

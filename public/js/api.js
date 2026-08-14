@@ -22,7 +22,12 @@ async function authenticatedFetch(endpoint, options = {}) {
 
   const config = {
     ...options,
-    headers
+    headers,
+    // Never let the browser serve or revalidate API responses from its HTTP cache.
+    // Without this, Express's ETag makes the browser re-request with If-None-Match
+    // and the server answers 304 Not Modified with an empty body, which breaks
+    // response.json() and surfaces as "Request failed with status 304".
+    cache: 'no-store'
   };
 
   if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
@@ -30,7 +35,15 @@ async function authenticatedFetch(endpoint, options = {}) {
   }
 
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, config);
+    let response = await fetch(`${API_BASE}${endpoint}`, config);
+
+    // A 304 can still slip through if a proxy or a stale browser cache entry
+    // sends a conditional request. A 304 has no body, so retry once with a
+    // cache-busting query param instead of surfacing a confusing error.
+    if (response.status === 304) {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      response = await fetch(`${API_BASE}${endpoint}${separator}_=${Date.now()}`, config);
+    }
 
     if (response.status === 401 && !endpoint.includes('/auth/')) {
       const refreshToken = localStorage.getItem('refreshToken');
@@ -67,6 +80,12 @@ async function authenticatedFetch(endpoint, options = {}) {
 }
 
 async function handleResponse(response) {
+  // A 304 has no body and must never reach JSON parsing.
+  // (Normally prevented by cache: 'no-store' + the server's Cache-Control header.)
+  if (response.status === 304) {
+    throw new ApiError('Stale cached response — please refresh the page and try again.', 304, null);
+  }
+
   const contentType = response.headers.get('content-type');
 
   if (contentType && contentType.includes('application/pdf')) {

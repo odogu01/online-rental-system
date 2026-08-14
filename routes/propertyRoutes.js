@@ -1,18 +1,17 @@
 const express = require('express');
 const { body, query } = require('express-validator');
 const { validate } = require('../middleware/validationMiddleware');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, optionalAuth } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
+const { uploadSingle } = require('../middleware/uploadMiddleware');
 const propertyController = require('../controllers/propertyController');
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(protect);
-
-// GET /api/properties - List properties with optional filtering
+// GET /api/properties - List properties with optional filtering (public browsing, optional auth)
 router.get(
   '/',
+  optionalAuth,
   [
     query('minRent').optional().isFloat({ min: 0 }).withMessage('minRent must be a non-negative number'),
     query('maxRent').optional().isFloat({ min: 0 }).withMessage('maxRent must be a non-negative number'),
@@ -25,16 +24,18 @@ router.get(
 // GET /api/properties/mine - Get current landlord's properties
 router.get(
   '/mine',
+  protect,
   authorize('landlord'),
   propertyController.getLandlordProperties
 );
 
 // GET /api/properties/:id - Get single property details
-router.get('/:id', propertyController.getPropertyById);
+router.get('/:id', protect, propertyController.getPropertyById);
 
 // POST /api/properties - Create new property listing
 router.post(
   '/',
+  protect,
   authorize('landlord', 'admin'),
   [
     body('title')
@@ -62,9 +63,19 @@ router.post(
   propertyController.createProperty
 );
 
+// POST /api/properties/:id/image - Upload property image
+router.post(
+  '/:id/image',
+  protect,
+  authorize('landlord', 'admin'),
+  uploadSingle,
+  propertyController.uploadPropertyImage
+);
+
 // PUT /api/properties/:id - Update property details
 router.put(
   '/:id',
+  protect,
   authorize('landlord', 'admin'),
   propertyController.updateProperty
 );
@@ -72,6 +83,7 @@ router.put(
 // DELETE /api/properties/:id - Delete property
 router.delete(
   '/:id',
+  protect,
   authorize('landlord', 'admin'),
   propertyController.deleteProperty
 );

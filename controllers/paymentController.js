@@ -1,8 +1,66 @@
 const Payment = require('../models/Payment');
 const Lease = require('../models/Lease');
 const Property = require('../models/Property');
+const Notification = require('../models/Notification');
 const { AppError } = require('../middleware/errorMiddleware');
 const { sendPaymentConfirmation } = require('../services/emailService');
+
+const buildScopeLeaseFilter = async (req) => {
+  if (req.user.role === 'landlord') {
+    const properties = await Property.find({ landlordId: req.user._id }).select('_id');
+    return { propertyId: { $in: properties.map(p => p._id) } };
+  }
+  if (req.user.role === 'tenant') {
+    return { tenantId: req.user._id };
+  }
+  return {};
+};
+
+const computeOutstanding = async (scopeFilter) => {
+  const leases = await Lease.find({
+    ...scopeFilter,
+    status: 'active'
+  })
+    .populate('propertyId', 'title')
+    .populate('tenantId', 'fullName');
+
+  const outstanding = [];
+
+  for (const lease of leases) {
+    const now = new Date();
+    const startDate = new Date(lease.startDate);
+    const endDate = new Date(lease.endDate);
+    const capDate = now < endDate ? now : endDate;
+
+    const monthsActive = Math.max(0,
+      (capDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (capDate.getMonth() - startDate.getMonth()) + 1
+    );
+
+    const paidPayments = await Payment.find({
+      leaseId: lease._id,
+      status: 'paid'
+    });
+
+    const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
+    const expectedTotal = monthsActive * lease.monthlyRent;
+    const balance = expectedTotal - totalPaid;
+
+    if (balance > 0) {
+      outstanding.push({
+        leaseId: lease._id,
+        propertyTitle: lease.propertyId?.title || 'Unknown',
+        tenantName: lease.tenantId?.fullName || 'Unknown',
+        monthlyRent: lease.monthlyRent,
+        monthsActive,
+        totalPaid,
+        balance
+      });
+    }
+  }
+
+  return outstanding;
+};
 
 exports.recordPayment = async (req, res, next) => {
   try {
@@ -43,6 +101,14 @@ exports.recordPayment = async (req, res, next) => {
       paymentMethod: payment.paymentMethod
     }).catch(err => console.warn('Payment email failed:', err.message));
 
+    // Notify the tenant in-app
+    Notification.create({
+      userId: lease.tenantId._id,
+      type: 'payment_confirmation',
+      message: `Payment of ₦${amountNum.toLocaleString()} recorded for ${lease.propertyId?.title || 'your property'}`,
+      link: '/tenant/payments.html'
+    }).catch(err => console.warn('Payment notification failed:', err.message));
+
     res.status(201).json({
       success: true,
       message: 'Payment recorded successfully',
@@ -69,14 +135,9 @@ exports.getPayments = async (req, res, next) => {
     }
 
     // Role-based filtering
-    if (req.user.role === 'landlord') {
-      const properties = await Property.find({ landlordId: req.user._id }).select('_id');
-      const leases = await Lease.find({
-        propertyId: { $in: properties.map(p => p._id) }
-      }).select('_id');
-      filter.leaseId = { $in: leases.map(l => l._id) };
-    } else if (req.user.role === 'tenant') {
-      const leases = await Lease.find({ tenantId: req.user._id }).select('_id');
+    const scopeFilter = await buildScopeLeaseFilter(req);
+    if (Object.keys(scopeFilter).length > 0) {
+      const leases = await Lease.find(scopeFilter).select('_id');
       filter.leaseId = { $in: leases.map(l => l._id) };
     }
 
@@ -91,12 +152,14 @@ exports.getPayments = async (req, res, next) => {
       })
       .sort({ paymentDate: -1 });
 
+    const outstandingList = await computeOutstanding(scopeFilter);
     const summary = {
       totalPayments: payments.length,
       totalAmount: payments.reduce((s, p) => s + p.amount, 0),
       paid: payments.filter(p => p.status === 'paid').reduce((s, p) => s + p.amount, 0),
       pending: payments.filter(p => p.status === 'pending').reduce((s, p) => s + p.amount, 0),
-      overdue: payments.filter(p => p.status === 'overdue').reduce((s, p) => s + p.amount, 0)
+      overdue: payments.filter(p => p.status === 'overdue').reduce((s, p) => s + p.amount, 0),
+      outstanding: outstandingList.reduce((s, o) => s + o.balance, 0)
     };
 
     res.json({
@@ -149,14 +212,25 @@ exports.generateReceipt = async (req, res, next) => {
     const payment = await Payment.findById(req.params.id)
       .populate({
         path: 'leaseId',
+        select: 'tenantId startDate endDate monthlyRent',
         populate: {
           path: 'propertyId',
-          select: 'title location'
+          select: 'title location landlordId'
         }
       });
 
     if (!payment) {
       throw new AppError('Payment not found', 404, 'PAYMENT_NOT_FOUND');
+    }
+
+    // Authorization: admin, the lease's landlord, or the tenant on the lease
+    const isAdmin = req.user.role === 'admin';
+    const property = payment.leaseId?.propertyId;
+    const isLandlord = property?.landlordId?.toString() === req.user._id?.toString();
+    const isTenant = payment.leaseId?.tenantId?.toString() === req.user._id?.toString();
+
+    if (!isAdmin && !isLandlord && !isTenant) {
+      throw new AppError('Not authorized to view this receipt', 403, 'PAYMENT_ACCESS_DENIED');
     }
 
     const PDFDocument = require('pdfkit');
@@ -225,47 +299,11 @@ exports.getOutstandingBalance = async (req, res, next) => {
   try {
     const { leaseId } = req.query;
 
-    const filter = {};
+    const filter = await buildScopeLeaseFilter(req);
     if (leaseId) filter._id = leaseId;
-    if (req.user.role === 'tenant') filter.tenantId = req.user._id;
 
-    const leases = await Lease.find({
-      ...filter,
-      status: 'active'
-    });
-
-    const outstanding = [];
-
-    for (const lease of leases) {
-      const now = new Date();
-      const startDate = new Date(lease.startDate);
-      const monthsActive = Math.max(0,
-        (now.getFullYear() - startDate.getFullYear()) * 12 +
-        (now.getMonth() - startDate.getMonth()) + 1
-      );
-
-      const paidPayments = await Payment.find({
-        leaseId: lease._id,
-        status: 'paid'
-      });
-
-      const totalPaid = paidPayments.reduce((sum, p) => sum + p.amount, 0);
-      const expectedTotal = monthsActive * lease.monthlyRent;
-      const balance = expectedTotal - totalPaid;
-
-      if (balance > 0) {
-        outstanding.push({
-          leaseId: lease._id,
-          monthlyRent: lease.monthlyRent,
-          monthsActive,
-          totalPaid,
-          expectedTotal,
-          outstandingBalance: balance
-        });
-      }
-    }
-
-    const totalOutstanding = outstanding.reduce((sum, o) => sum + o.outstandingBalance, 0);
+    const outstanding = await computeOutstanding(filter);
+    const totalOutstanding = outstanding.reduce((sum, o) => sum + o.balance, 0);
 
     res.json({
       success: true,

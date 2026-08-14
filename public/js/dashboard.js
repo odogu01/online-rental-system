@@ -111,15 +111,16 @@ function getStatusBadge(status) {
   };
 
   const color = badges[status] || 'bg-gray-100 text-gray-800';
-  return `<span class="px-2 py-1 text-xs font-medium rounded-full ${color}">${status}</span>`;
+  return `<span class="px-2 py-1 text-xs font-medium rounded-full ${color}">${escapeHtml(status)}</span>`;
 }
 
 function emptyState(container, message = 'No data available', icon = 'fa-inbox') {
+  if (typeof container === 'string') container = document.getElementById(container);
   if (!container) return;
   container.innerHTML = `
     <div class="text-center py-12">
       <i class="fas ${icon} text-5xl text-gray-300 mb-4"></i>
-      <p class="text-gray-500 text-lg">${message}</p>
+      <p class="text-gray-500 text-lg">${escapeHtml(message)}</p>
     </div>
   `;
 }

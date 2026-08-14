@@ -1,6 +1,35 @@
 const Property = require('../models/Property');
 const Lease = require('../models/Lease');
+const User = require('../models/User');
 const { AppError } = require('../middleware/errorMiddleware');
+
+exports.uploadPropertyImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new AppError('No image file uploaded', 400, 'NO_FILE');
+    }
+
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      throw new AppError('Property not found', 404, 'PROPERTY_NOT_FOUND');
+    }
+
+    if (req.user.role !== 'admin' && property.landlordId.toString() !== req.user._id.toString()) {
+      throw new AppError('You do not own this property', 403, 'NOT_OWNER');
+    }
+
+    property.images = '/uploads/' + req.file.filename;
+    await property.save();
+
+    res.json({
+      success: true,
+      message: 'Image uploaded',
+      data: { property }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 exports.createProperty = async (req, res, next) => {
   try {
@@ -24,12 +53,11 @@ exports.createProperty = async (req, res, next) => {
 exports.getAllProperties = async (req, res, next) => {
   try {
     const filter = {};
-    const { status, minRent, maxRent, bedrooms, location, propertyType } = req.query;
+    const { status, minRent, maxRent, bedrooms, location, ownerName } = req.query;
 
     if (status) filter.status = status;
     if (location) filter.location = { $regex: location, $options: 'i' };
     if (bedrooms) filter.bedrooms = parseInt(bedrooms);
-    if (propertyType) filter.propertyType = propertyType;
 
     if (minRent || maxRent) {
       filter.rentAmount = {};
@@ -37,8 +65,16 @@ exports.getAllProperties = async (req, res, next) => {
       if (maxRent) filter.rentAmount.$lte = parseFloat(maxRent);
     }
 
-    if (req.user.role === 'landlord') {
+    if (req.user?.role === 'landlord') {
       filter.landlordId = req.user._id;
+    }
+
+    if (ownerName) {
+      const landlords = await User.find({
+        fullName: { $regex: ownerName, $options: 'i' },
+        role: 'landlord'
+      }).select('_id');
+      filter.landlordId = { $in: landlords.map(l => l._id) };
     }
 
     const sortOrder = req.query.sort === 'oldest' ? 1 : -1;
@@ -58,8 +94,9 @@ exports.getAllProperties = async (req, res, next) => {
       success: true,
       data: {
         properties,
+        total: properties.length,
         summary,
-        filters: { status, minRent, maxRent, bedrooms, location }
+        filters: { status, minRent, maxRent, bedrooms, location, ownerName }
       }
     });
   } catch (error) {

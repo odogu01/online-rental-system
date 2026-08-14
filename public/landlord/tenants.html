@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html" class="active"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html" class="active"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadTenants(); });
 
@@ -55,15 +55,19 @@
 
         // Get overdue payment info
         let overdueMap = {};
-        try { const overResult = await apiGet('/payments/overdue'); const overdue = overResult.data?.payments || []; overdue.forEach(p => { if (p.leaseId?.tenantId?._id) overdueMap[p.leaseId.tenantId._id] = (overdueMap[p.leaseId.tenantId._id] || 0) + 1; }); } catch(e) {}
+        try { const overResult = await apiGet('/payments/overdue'); const overdue = overResult.data?.overduePayments || []; overdue.forEach(p => { if (p.leaseId?.tenantId?._id) overdueMap[p.leaseId.tenantId._id] = (overdueMap[p.leaseId.tenantId._id] || 0) + 1; }); } catch(e) {}
         document.getElementById('overdueTenantCount').textContent = Object.keys(overdueMap).length;
 
         container.innerHTML = `<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">${tenants.map(t => {
           const isOverdue = overdueMap[t._id] > 0;
+          const lease = t.activeLease;
           return `<div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-            <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${getInitials(t.fullName)}</div>
-            <div><p class="font-semibold text-sm">${t.fullName}</p><p class="text-xs text-gray-400">${t.email}</p></div></div>
-            <div class="text-xs space-y-1"><p><i class="fas fa-phone mr-1 w-4 text-gray-400"></i>${t.phoneNumber || 'N/A'}</p>
+            <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">${escapeHtml(getInitials(t.fullName))}</div>
+            <div><p class="font-semibold text-sm">${escapeHtml(t.fullName)}</p><p class="text-xs text-gray-400">${escapeHtml(t.email)}</p></div></div>
+            <div class="text-xs space-y-1"><p><i class="fas fa-phone mr-1 w-4 text-gray-400"></i>${escapeHtml(t.phoneNumber || 'N/A')}</p>
+            ${lease ? `<p><i class="fas fa-building mr-1 w-4 text-gray-400"></i>${escapeHtml(lease.propertyTitle || 'N/A')}</p>
+            <p><i class="fas fa-money-bill mr-1 w-4 text-gray-400"></i>NGN ${(lease.monthlyRent || 0).toLocaleString()}/mo</p>
+            <p><i class="fas fa-calendar mr-1 w-4 text-gray-400"></i>${escapeHtml(formatDate(lease.startDate))} - ${escapeHtml(formatDate(lease.endDate))}</p>` : '<p class="text-gray-400">No active lease</p>'}
             ${isOverdue ? '<p class="text-red-600 font-medium"><i class="fas fa-exclamation-circle mr-1"></i>Has overdue payments</p>' : ''}</div>
           </div>`;
         }).join('')}</div>`;

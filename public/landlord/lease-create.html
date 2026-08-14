@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html" class="active"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html" class="active"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script>
+<script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/ui.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       protectPage('landlord');
@@ -57,10 +57,16 @@
         const [propResult, tenantResult] = await Promise.all([apiGet('/properties', { status: 'vacant' }), apiGet('/leases/tenants')]);
         const props = propResult.data?.properties || [];
         const tenants = tenantResult.data?.tenants || [];
+        // Only show tenants that don't already have an active lease
+        const availableTenants = tenants.filter(t => !t.activeLease);
         const propSelect = document.getElementById('propertyId');
-        propSelect.innerHTML = '<option value="">Select Property</option>' + props.map(p => `<option value="${p._id}">${p.title} - NGN ${(p.rentAmount || 0).toLocaleString()}</option>`).join('');
+        propSelect.innerHTML = '<option value="">Select Property</option>' + props.map(p => `<option value="${escapeHtml(p._id)}">${escapeHtml(p.title)} - NGN ${(p.rentAmount || 0).toLocaleString()}</option>`).join('');
         const tenantSelect = document.getElementById('tenantId');
-        tenantSelect.innerHTML = '<option value="">Select Tenant</option>' + tenants.map(t => `<option value="${t._id}">${t.fullName} (${t.email})</option>`).join('');
+        if (availableTenants.length === 0) {
+          tenantSelect.innerHTML = '<option value="">No tenants without an active lease</option>';
+        } else {
+          tenantSelect.innerHTML = '<option value="">Select Tenant</option>' + availableTenants.map(t => `<option value="${escapeHtml(t._id)}">${escapeHtml(t.fullName)} (${escapeHtml(t.email)})</option>`).join('');
+        }
       } catch(e) { showToast('Failed to load form data', 'error'); }
     }
 

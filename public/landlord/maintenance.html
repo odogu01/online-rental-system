@@ -11,7 +11,7 @@
 <body>
   <div class="sidebar" id="sidebar"><div class="sidebar-logo flex items-center gap-3"><i class="fas fa-building text-2xl"></i><div><div class="font-bold">RentalSystem</div><div class="text-xs text-blue-300">Landlord Portal</div></div></div>
     <nav class="sidebar-nav">
-      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a>
+      <div class="sidebar-section">Main</div><a href="/landlord/dashboard.html"><i class="fas fa-chart-pie"></i>Dashboard</a><a href="/landlord/properties.html"><i class="fas fa-building"></i>My Properties</a><a href="/landlord/leases.html"><i class="fas fa-file-signature"></i>Leases</a><a href="/landlord/tenants.html"><i class="fas fa-users"></i>Tenants</a><a href="/landlord/inquiries.html"><i class="fas fa-envelope"></i>Inquiries</a>
       <div class="sidebar-section">Financial</div><a href="/landlord/payments.html"><i class="fas fa-credit-card"></i>Payments</a><a href="/landlord/reports.html"><i class="fas fa-chart-bar"></i>Reports</a>
       <div class="sidebar-section">Services</div><a href="/landlord/maintenance.html" class="active"><i class="fas fa-tools"></i>Maintenance</a>
       <div class="sidebar-section">Account</div><a href="/landlord/profile.html"><i class="fas fa-user-cog"></i>Profile</a><a href="#" onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</a>
@@ -35,15 +35,18 @@
         <select id="statusFilter" class="input" onchange="loadRequests()"><option value="">All Status</option><option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select>
         <select id="urgencyFilter" class="input" onchange="loadRequests()"><option value="">All Urgency</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select>
       </div>
-      <!-- Table -->
+<!-- Table -->
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <div id="requestsContainer"><p class="text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p></div>
+        <table class="table">
+          <thead><tr><th>Subject</th><th>Property</th><th>Status</th><th>Urgency</th><th>Date</th><th>Tenant</th><th>Actions</th></tr></thead>
+          <tbody id="requestsContainer"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
   <!-- Status Update Modal -->
-  <div id="statusModal" class="modal"><div class="modal-content p-6" style="max-width:450px">
+  <div id="statusModal" class="modal hidden"><div class="modal-content p-6" style="max-width:450px">
     <h3 class="text-lg font-semibold mb-2">Update Status</h3>
     <div class="mb-4"><label class="label">New Status</label><select id="newStatus" class="input"><option value="in-progress">In Progress</option><option value="completed">Completed</option><option value="rejected">Rejected</option></select></div>
     <div class="mb-4"><label class="label">Resolution Notes</label><textarea id="resolutionNotes" class="input" rows="3"></textarea></div>
@@ -52,12 +55,12 @@
   </div></div>
 
   <!-- Detail Modal -->
-  <div id="detailModal" class="modal"><div class="modal-content p-6" style="max-width:550px">
+  <div id="detailModal" class="modal hidden"><div class="modal-content p-6" style="max-width:550px">
     <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Request Details</h3><button onclick="closeModal('detailModal')" class="text-gray-400 hover:text-gray-700">&times;</button></div>
     <div id="detailContent"><p class="text-gray-400">Loading...</p></div>
   </div></div>
 
-  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/maintenance.js"></script>
+  <script src="/js/api.js"></script><script src="/js/auth.js"></script><script src="/js/dashboard.js"></script><script src="/js/maintenance.js"></script><script src="/js/ui.js"></script>
   <script>
     let currentRequestId = null;
     document.addEventListener('DOMContentLoaded', () => { protectPage('landlord'); loadRequests(); });
@@ -76,14 +79,18 @@
           document.getElementById('statsInProgress').textContent = summary.inProgress || 0;
           document.getElementById('statsCompleted').textContent = summary.completed || 0;
         }
-      } catch(e) { document.getElementById('requestsContainer').innerHTML = '<p class="text-red-500 p-4">Failed to load</p>'; }
+      } catch(e) { document.getElementById('requestsContainer').innerHTML = '<tr><td colspan="7" class="text-red-500 p-4 text-center">Failed to load</td></tr>'; }
     }
 
-    window.openStatusModal = function(id) { currentRequestId = id; openModal('statusModal'); };
-    window.viewDetails = async function(id) {
+    window.openStatusModal = function(id) { currentRequestId = id; document.getElementById('resolutionNotes').value = ''; document.getElementById('statusFormMessage').classList.add('hidden'); openModal('statusModal'); };
+
+    // Wrap the shared viewRequestDetails so the detail modal opens first
+    const _realViewRequestDetails = window.viewRequestDetails;
+    window.viewRequestDetails = async function(requestId, contentContainerId) {
       openModal('detailModal');
-      document.getElementById('detailContent').innerHTML = '<p class="text-gray-400">Loading...</p>';
-      try { await viewRequestDetails(id, 'detailContent'); } catch(e) { document.getElementById('detailContent').innerHTML = '<p class="text-red-500">Failed to load</p>'; }
+      const container = contentContainerId ? document.getElementById(contentContainerId) : null;
+      if (container) container.innerHTML = '<p class="text-gray-400">Loading...</p>';
+      if (typeof _realViewRequestDetails === 'function') return _realViewRequestDetails(requestId, contentContainerId);
     };
 
     async function updateStatus() {
@@ -91,10 +98,7 @@
       const notes = document.getElementById('resolutionNotes').value;
       const btn = document.getElementById('updateStatusBtn'); btn.disabled = true;
       try {
-        if (status === 'completed' || status === 'rejected') {
-          await updateRequestStatus(currentRequestId, status, 'detailContent');
-        }
-        await submitStatusUpdate(currentRequestId, status, notes);
+        await setMaintenanceStatus(currentRequestId, status, notes);
         closeModal('statusModal');
         loadRequests();
       } catch(e) { showFormError('statusFormMessage', e); }

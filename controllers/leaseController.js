@@ -16,10 +16,6 @@ exports.createLease = async (req, res, next) => {
       throw new AppError('You do not own this property', 403, 'NOT_OWNER');
     }
 
-    if (property.status === 'occupied') {
-      throw new AppError('Property is already occupied', 400, 'PROPERTY_OCCUPIED');
-    }
-
     const tenant = await User.findById(tenantId);
     if (!tenant || tenant.role !== 'tenant') {
       throw new AppError('Invalid tenant', 400, 'INVALID_TENANT');
@@ -36,23 +32,35 @@ exports.createLease = async (req, res, next) => {
       throw new AppError('Start date cannot be in the past', 400, 'PAST_START_DATE');
     }
 
-    const lease = await Lease.create({
-      propertyId,
-      tenantId,
-      startDate: start,
-      endDate: end,
-      monthlyRent,
-      securityDeposit: securityDeposit || 0
-    });
+    const claimed = await Property.findOneAndUpdate(
+      { _id: propertyId, status: { $ne: 'occupied' } },
+      { status: 'occupied' },
+      { new: true }
+    );
 
-    property.status = 'occupied';
-    await property.save();
+    if (!claimed) {
+      throw new AppError('Property is already occupied', 400, 'PROPERTY_OCCUPIED');
+    }
 
-    res.status(201).json({
-      success: true,
-      message: 'Lease agreement created successfully',
-      data: { lease }
-    });
+    try {
+      const lease = await Lease.create({
+        propertyId,
+        tenantId,
+        startDate: start,
+        endDate: end,
+        monthlyRent,
+        securityDeposit: securityDeposit || 0
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Lease agreement created successfully',
+        data: { lease }
+      });
+    } catch (leaseError) {
+      await Property.updateOne({ _id: propertyId }, { status: 'vacant' }).catch(() => {});
+      throw leaseError;
+    }
   } catch (error) {
     next(error);
   }
@@ -72,10 +80,11 @@ exports.getLeases = async (req, res, next) => {
       filter.tenantId = req.user._id;
     }
 
-    if (startDate || endDate) {
-      filter.startDate = {};
-      if (startDate) filter.startDate.$gte = new Date(startDate);
-      if (endDate) filter.startDate.$lte = new Date(endDate);
+    if (startDate) {
+      filter.startDate = { ...(filter.startDate || {}), $gte: new Date(startDate) };
+    }
+    if (endDate) {
+      filter.endDate = { ...(filter.endDate || {}), $lte: new Date(endDate) };
     }
 
     const leases = await Lease.find(filter)
@@ -152,7 +161,7 @@ exports.updateLeaseStatus = async (req, res, next) => {
 
     if (status === 'terminated') {
       await Property.findByIdAndUpdate(lease.propertyId, { status: 'vacant' });
-    } else if (status === 'active' && lease.status === 'terminated') {
+    } else if (status === 'active' && (lease.status === 'terminated' || lease.status === 'expired')) {
       await Property.findByIdAndUpdate(lease.propertyId, { status: 'occupied' });
     } else if (status === 'expired') {
       await Property.findByIdAndUpdate(lease.propertyId, { status: 'vacant' });
@@ -165,6 +174,59 @@ exports.updateLeaseStatus = async (req, res, next) => {
       success: true,
       message: `Lease status updated to '${status}'`,
       data: { lease }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTenantsByLandlord = async (req, res, next) => {
+  try {
+    const propertyFilter = {};
+
+    if (req.user.role !== 'admin') {
+      const properties = await Property.find({ landlordId: req.user._id }).select('_id');
+      propertyFilter.propertyId = { $in: properties.map(p => p._id) };
+    }
+
+    const leases = await Lease.find(propertyFilter)
+      .populate('propertyId', 'title')
+      .sort({ createdAt: -1 });
+
+    const activeByTenant = new Map();
+    const tenantIds = new Set();
+
+    for (const lease of leases) {
+      tenantIds.add(lease.tenantId.toString());
+      if (lease.status === 'active' && !activeByTenant.has(lease.tenantId.toString())) {
+        activeByTenant.set(lease.tenantId.toString(), lease);
+      }
+    }
+
+    const tenants = await User.find({ _id: { $in: [...tenantIds] } })
+      .select('fullName email phoneNumber');
+
+    const result = tenants.map(tenant => {
+      const activeLease = activeByTenant.get(tenant._id.toString());
+      return {
+        _id: tenant._id,
+        fullName: tenant.fullName,
+        email: tenant.email,
+        phoneNumber: tenant.phoneNumber,
+        activeLease: activeLease ? {
+          _id: activeLease._id,
+          status: activeLease.status,
+          startDate: activeLease.startDate,
+          endDate: activeLease.endDate,
+          monthlyRent: activeLease.monthlyRent,
+          propertyTitle: activeLease.propertyId?.title || null
+        } : null
+      };
+    });
+
+    res.json({
+      success: true,
+      data: { tenants: result }
     });
   } catch (error) {
     next(error);
