@@ -68,6 +68,13 @@ app.use('/api', (req, res, next) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve uploaded images from wherever they're stored:
+// local dev -> public/uploads, Vercel serverless -> OS temp dir (/tmp).
+// (Uploaded files are NOT persisted on Vercel's ephemeral filesystem —
+// for permanent storage use Vercel Blob or an object store.)
+const { UPLOAD_PATH } = require('./middleware/uploadMiddleware');
+app.use('/uploads', express.static(UPLOAD_PATH));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/leases', leaseRoutes);
