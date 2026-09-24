@@ -35,10 +35,11 @@
   </nav>
 
   <!-- Hero Section -->
-  <section class="hero-gradient pt-24 pb-16 md:pt-32 md:pb-24">
+  <section class="hero-gradient home-hero pt-24 pb-16 md:pt-32 md:pb-24">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="grid md:grid-cols-2 gap-12 items-center">
-        <div>
+        <div class="hero-copy">
+          <span class="hero-eyebrow"><i class="fas fa-sparkles"></i> A better way to rent and manage</span>
           <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-tight">
             Simplify Property<br>Management with<br><span class="text-yellow-400">One Platform</span>
           </h1>
@@ -55,31 +56,11 @@
             </a>
           </div>
         </div>
-        <div class="hidden md:block">
-          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="bg-white/10 rounded-xl p-4 text-center">
-                <i class="fas fa-home text-3xl text-yellow-400 mb-2"></i>
-                <p class="text-white text-2xl font-bold">50+</p>
-                <p class="text-blue-200 text-sm">Properties</p>
-              </div>
-              <div class="bg-white/10 rounded-xl p-4 text-center">
-                <i class="fas fa-users text-3xl text-yellow-400 mb-2"></i>
-                <p class="text-white text-2xl font-bold">200+</p>
-                <p class="text-blue-200 text-sm">Tenants</p>
-              </div>
-              <div class="bg-white/10 rounded-xl p-4 text-center">
-                <i class="fas fa-credit-card text-3xl text-yellow-400 mb-2"></i>
-                <p class="text-white text-2xl font-bold">500+</p>
-                <p class="text-blue-200 text-sm">Payments</p>
-              </div>
-              <div class="bg-white/10 rounded-xl p-4 text-center">
-                <i class="fas fa-check-circle text-3xl text-yellow-400 mb-2"></i>
-                <p class="text-white text-2xl font-bold">98%</p>
-                <p class="text-blue-200 text-sm">Satisfaction</p>
-              </div>
-            </div>
-          </div>
+        <div class="hero-visual" aria-label="Modern home available to rent" role="img">
+          <div class="hero-orbit hero-orbit-one"></div><div class="hero-orbit hero-orbit-two"></div>
+          <div class="hero-photo"><span class="photo-tag"><i class="fas fa-location-dot"></i> Find your place</span></div>
+          <div class="hero-float-card hero-rating"><span class="float-icon"><i class="fas fa-star"></i></span><span><strong>Made for easier renting</strong><small>Everything in one place</small></span></div>
+          <div class="hero-float-card hero-home-card"><i class="fas fa-house-chimney"></i><span><strong>Welcome home</strong><small>Browse places you’ll love</small></span></div>
         </div>
       </div>
     </div>
@@ -93,42 +74,42 @@
         <p class="text-gray-500 mt-4 max-w-2xl mx-auto">Powerful features designed to streamline your rental property management experience.</p>
       </div>
       <div class="grid md:grid-cols-3 gap-8">
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-building text-blue-600 text-xl"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Property Management</h3>
           <p class="text-gray-500 text-sm">List, track, and manage all your properties with detailed information, vacancy tracking, and status updates.</p>
         </div>
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-file-signature text-green-600 text-xl"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Lease Management</h3>
           <p class="text-gray-500 text-sm">Create and manage digital lease agreements, track lease status, and get automatic expiry notifications.</p>
         </div>
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-credit-card text-yellow-600 text-xl"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Rent Tracking</h3>
           <p class="text-gray-500 text-sm">Record payments, track outstanding balances, and generate receipts. Monitor payment status at a glance.</p>
         </div>
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-tools text-purple-600 text-xl"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Maintenance Requests</h3>
           <p class="text-gray-500 text-sm">Tenants can submit maintenance requests with priority levels. Landlords can track, assign, and resolve issues.</p>
         </div>
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-bell text-red-600 text-xl"></i>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-2">Automated Notifications</h3>
           <p class="text-gray-500 text-sm">Automatic email notifications for rent reminders, maintenance updates, and lease expiry warnings.</p>
         </div>
-        <div class="p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+        <div class="feature-card p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
           <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
             <i class="fas fa-chart-bar text-indigo-600 text-xl"></i>
           </div>
@@ -147,21 +128,21 @@
         <p class="text-gray-500 mt-4">Three simple steps to get started</p>
       </div>
       <div class="grid md:grid-cols-3 gap-8">
-        <div class="text-center">
+        <div class="step-card text-center">
           <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
             <span class="text-white text-2xl font-bold">1</span>
           </div>
           <h3 class="text-lg font-semibold mb-2">Create Account</h3>
           <p class="text-gray-500 text-sm">Register as a landlord or tenant. Set up your profile in minutes.</p>
         </div>
-        <div class="text-center">
+        <div class="step-card text-center">
           <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
             <span class="text-white text-2xl font-bold">2</span>
           </div>
           <h3 class="text-lg font-semibold mb-2">Add or Find Property</h3>
           <p class="text-gray-500 text-sm">Landlords list properties. Tenants search and view available rentals.</p>
         </div>
-        <div class="text-center">
+        <div class="step-card text-center">
           <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
             <span class="text-white text-2xl font-bold">3</span>
           </div>
@@ -192,7 +173,7 @@
             <p class="text-blue-800 text-sm mt-1"><strong>University:</strong> Obong University, Nigeria</p>
           </div>
         </div>
-        <div class="bg-gray-100 rounded-2xl p-12 text-center">
+        <div class="about-visual rounded-2xl p-12 text-center">
           <i class="fas fa-university text-6xl text-blue-900 mb-4"></i>
           <h3 class="text-2xl font-bold text-blue-900">Obong University</h3>
           <p class="text-gray-500 mt-2">Faculty of Natural and Applied Science</p>
